@@ -510,6 +510,7 @@ window.openModal = function(i=-1){
 
 window.closeModal = function(){ document.getElementById('modal').classList.remove('open'); };
 
+// Função para adicionar meses a uma data mantendo o dia aproximado
 function addMonthsToDate(dateStr, months) {
   let [year, month, day] = dateStr.split('-').map(Number);
   let d = new Date(year, month - 1 + months, day);
@@ -532,14 +533,16 @@ window.save = function(){
   const data = getCurrentData();
 
   if(editing >= 0) {
+    // Modo Edição (altera apenas o item selecionado)
     data[editing] = { fornecedor: fF, valor: fV, vencimento: fVc, dataPagamento: fP };
   } else {
+    // Modo Criação
     if (tipoRepeticao === 'unica') {
       data.push({ fornecedor: fF, valor: fV, vencimento: fVc, dataPagamento: fP });
     } 
     else if (tipoRepeticao === 'parcelada') {
       const qtdParcelas = parseInt(document.getElementById('fQtdParcelas').value) || 2;
-      const valorParcela = (fV / qtdParcelas);
+      const valorParcela = (fV / qtdParcelas); // Divide o valor total entre as parcelas
       
       for(let i = 0; i < qtdParcelas; i++) {
         const vencimentoParcela = addMonthsToDate(fVc, i);
@@ -558,7 +561,7 @@ window.save = function(){
         const vencimentoRec = addMonthsToDate(fVc, i);
         data.push({
           fornecedor: fF,
-          valor: fV,
+          valor: fV, // No modo recorrente, o valor integral se repete todo mês
           vencimento: vencimentoRec,
           dataPagamento: (i === 0) ? fP : ''
         });
@@ -625,8 +628,7 @@ window.exportSelectedPDF = function(){
 window.exportCSV = function(){
   const data = getCurrentData();
   let lines = [['Fornecedor','Valor','Vencimento','Pagamento'], ...data.map(x => [x.fornecedor, x.valor, x.vencimento, x.dataPagamento])];
-  let csv = lines.map(r => r.join(';')).join('
-');
+  let csv = lines.map(r => r.join(';')).join('\n');
   let a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
   a.download = 'despesas.csv';
