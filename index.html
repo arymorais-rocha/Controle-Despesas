@@ -8,7 +8,7 @@
 *{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:#f4f6f8;color:#1f2937}
 header{background:#111827;color:white;padding:22px 28px;display:flex;justify-content:space-between;align-items:center;gap:15px}
 h1{margin:0;font-size:24px}.sub{opacity:.75;font-size:13px;margin-top:4px}
-.container{max-width:1250px;margin:25px auto;padding:0 18px}
+.container{max-width:1300px;margin:25px auto;padding:0 18px}
 .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
 .card{background:white;border-radius:14px;padding:18px;box-shadow:0 2px 10px #0000000d}
 .card small{color:#6b7280}.card strong{display:block;font-size:24px;margin-top:7px}
@@ -17,7 +17,7 @@ input,button,select{font:inherit}input,select{border:1px solid #d1d5db;border-ra
 button{border:0;border-radius:99px;padding:10px 14px;cursor:pointer;font-weight:600}
 .primary{background:#111827;color:white}.secondary{background:#e5e7eb;color:#111827}.danger{background:#fee2e2;color:#991b1b}
 .table-wrap{background:white;border-radius:14px;overflow:auto;box-shadow:0 2px 10px #0000000d}
-table{width:100%;border-collapse:collapse;min-width:850px}th,td{padding:13px 12px;border-bottom:1px solid #eef0f3;text-align:left;font-size:14px}th{background:#f9fafb;color:#4b5563}
+table{width:100%;border-collapse:collapse;min-width:900px}th,td{padding:13px 12px;border-bottom:1px solid #eef0f3;text-align:left;font-size:14px}th{background:#f9fafb;color:#4b5563}
 
 .status{padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800;display:inline-block;text-transform:uppercase;letter-spacing:0.5px}
 .pago{background:#dcfce7;color:#166534}
@@ -57,9 +57,12 @@ table{width:100%;border-collapse:collapse;min-width:850px}th,td{padding:13px 12p
 .manage-list{margin-top:15px;display:flex;flex-direction:column;gap:10px;max-height:250px;overflow-y:auto}
 .manage-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px}
 
+.btn-anexo{background:#e0e7ff;color:#3730a3;padding:5px 10px;border-radius:99px;font-size:12px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+.btn-anexo:hover{background:#c7d2fe}
+
 @media print{
   body{background:white}
-  .toolbar,.actions,header button,header select,.sync-status{display:none!important}
+  .toolbar,.actions,header button,header select,.sync-status,.btn-anexo{display:none!important}
   .container{max-width:none;margin:0;padding:10px}
   .table-wrap{box-shadow:none}
   .cards{grid-template-columns:repeat(4,1fr)}
@@ -141,6 +144,7 @@ table{width:100%;border-collapse:collapse;min-width:850px}th,td{padding:13px 12p
         <th onclick="ordenarPor('vencimento')" style="cursor:pointer;user-select:none;">Vencimento <span id="setaVencimento">↕</span></th>
         <th onclick="ordenarPor('dataPagamento')" style="cursor:pointer;user-select:none;">Pagamento <span id="setaPagamento">↕</span></th>
         <th>Situação</th>
+        <th>Anexo</th>
         <th>Ações</th>
       </tr>
     </thead>
@@ -157,7 +161,6 @@ table{width:100%;border-collapse:collapse;min-width:850px}th,td{padding:13px 12p
   <div class="field"><label>Valor (R$)</label><input id="fValor" type="number" step="0.01" placeholder="0.00"></div>
   <div class="field"><label>Data do 1º Vencimento</label><input id="fVenc" type="date"></div>
   
-  <!-- TIPO DE DESPESA -->
   <div class="field"><label>Repetição</label>
     <select id="fTipoRepeticao" onchange="toggleOpcoesRepeticao()">
       <option value="unica">À Vista / Única</option>
@@ -166,19 +169,24 @@ table{width:100%;border-collapse:collapse;min-width:850px}th,td{padding:13px 12p
     </select>
   </div>
 
-  <!-- OPÇÃO PARCELADA -->
   <div class="field" id="boxParcelas" style="display:none;">
     <label>Qtd. Parcelas</label>
     <input id="fQtdParcelas" type="number" min="2" max="72" value="2">
   </div>
 
-  <!-- OPÇÃO RECORRENTE -->
   <div class="field" id="boxRecorrente" style="display:none;">
     <label>Gerar por quantos meses?</label>
     <input id="fQtdMesesRec" type="number" min="2" max="48" value="12">
   </div>
 
   <div class="field full"><label>Data de pagamento (opcional)</label><input id="fPag" type="date"></div>
+  
+  <!-- CAMPO DE ANEXO -->
+  <div class="field full">
+    <label>Anexar Boleto / Foto / PDF</label>
+    <input id="fAnexo" type="file" accept="image/*,application/pdf" style="padding:6px; border-radius:8px;">
+    <small id="anexoAtualInfo" style="color:#6b7280; font-weight:600; margin-top:3px;"></small>
+  </div>
 </div>
 <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
   <button class="secondary" onclick="closeModal()">Cancelar</button>
@@ -205,6 +213,18 @@ table{width:100%;border-collapse:collapse;min-width:850px}th,td{padding:13px 12p
 </div>
 </div></div>
 
+<!-- MODAL VISUALIZADOR DE IMAGEM -->
+<div class="modal" id="modalVerAnexo">
+  <div class="box" style="width:min(800px, 95%); text-align:center;">
+    <h3>Visualizar Anexo</h3>
+    <div id="containerAnexoPreview" style="margin:15px 0; max-height:70vh; overflow:auto;"></div>
+    <div style="display:flex; justify-content:center; gap:10px;">
+      <a id="btnDownloadAnexo" class="primary" style="padding:10px 18px; border-radius:99px; text-decoration:none;" download="anexo">Baixar Anexo</a>
+      <button class="secondary" onclick="closeModalAnexo()">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyOA184ctVz1rpnbtzgfChkXXSEgNxjY_UMXqVkXftM6VG1luPlefrgsDoEYtlkJR8s/exec";
 
@@ -222,6 +242,8 @@ let appState = {
 };
 
 let editing = -1;
+let tempAnexoBase64 = null;
+let tempAnexoNome = null;
 let selectedExpenses = new Set();
 let ordenacaoAtual = { coluna: null, direcao: 'asc' };
 
@@ -441,6 +463,10 @@ function render(){
   const rows = getFilteredData();
   document.getElementById('tbody').innerHTML = rows.map(x => {
     const isSelected = selectedExpenses.has(x.i);
+    const btnAnexoHtml = x.anexo 
+      ? `<button class="btn-anexo" onclick="verAnexo(${x.i})">📎 Ver Anexo</button>`
+      : `<span style="color:#9ca3af;font-size:12px;">Sem anexo</span>`;
+
     return `
     <tr class="${isSelected ? 'row-selected' : ''}">
       <td style="text-align:center"><input type="checkbox" class="expenseCheck" ${isSelected?'checked':''} onchange="toggleExpense(${x.i},this.checked)"></td>
@@ -449,6 +475,7 @@ function render(){
       <td>${fmtDate(x.vencimento)}</td>
       <td>${fmtDate(x.dataPagamento)}</td>
       <td><span class="status ${x.s}">${label(x.s)}</span></td>
+      <td>${btnAnexoHtml}</td>
       <td class="actions">
         <button class="secondary" onclick="edit(${x.i})">Editar</button>
         ${x.dataPagamento?'':`<button class="primary" onclick="pay(${x.i})">Pagar</button>`}
@@ -487,6 +514,8 @@ window.openModal = function(i=-1){
   editing = i;
   document.getElementById('modal').classList.add('open');
   document.getElementById('modalTitle').textContent = i < 0 ? 'Nova despesa' : 'Editar despesa';
+  document.getElementById('fAnexo').value = '';
+  
   const data = getCurrentData();
 
   if(i >= 0){
@@ -497,6 +526,9 @@ window.openModal = function(i=-1){
     document.getElementById('fPag').value = x.dataPagamento || '';
     document.getElementById('fTipoRepeticao').value = 'unica';
     document.getElementById('fTipoRepeticao').disabled = true;
+    tempAnexoBase64 = x.anexo || null;
+    tempAnexoNome = x.anexoNome || null;
+    document.getElementById('anexoAtualInfo').textContent = x.anexo ? `Já possui anexo: ${x.anexoNome || 'Anexo'}` : '';
   } else {
     document.getElementById('fFornecedor').value = '';
     document.getElementById('fValor').value = '';
@@ -504,13 +536,15 @@ window.openModal = function(i=-1){
     document.getElementById('fPag').value = '';
     document.getElementById('fTipoRepeticao').value = 'unica';
     document.getElementById('fTipoRepeticao').disabled = false;
+    tempAnexoBase64 = null;
+    tempAnexoNome = null;
+    document.getElementById('anexoAtualInfo').textContent = '';
   }
   toggleOpcoesRepeticao();
 };
 
 window.closeModal = function(){ document.getElementById('modal').classList.remove('open'); };
 
-// Função para adicionar meses a uma data mantendo o dia aproximado
 function addMonthsToDate(dateStr, months) {
   let [year, month, day] = dateStr.split('-').map(Number);
   let d = new Date(year, month - 1 + months, day);
@@ -521,28 +555,51 @@ function addMonthsToDate(dateStr, months) {
   return `${resYear}-${resMonth}-${resDay}`;
 }
 
-window.save = function(){
+window.save = async function(){
   const fF = document.getElementById('fFornecedor').value.trim();
   const fV = Number(document.getElementById('fValor').value || 0);
   const fVc = document.getElementById('fVenc').value;
   const fP = document.getElementById('fPag').value || '';
   const tipoRepeticao = document.getElementById('fTipoRepeticao').value;
+  const inputAnexo = document.getElementById('fAnexo');
 
   if(!fF || !fVc){ alert('Preencha o fornecedor e a data de vencimento.'); return; }
   
+  if (inputAnexo.files && inputAnexo.files[0]) {
+    const file = inputAnexo.files[0];
+    tempAnexoNome = file.name;
+    tempAnexoBase64 = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.readAsDataURL(file);
+    });
+  }
+
   const data = getCurrentData();
 
   if(editing >= 0) {
-    // Modo Edição (altera apenas o item selecionado)
-    data[editing] = { fornecedor: fF, valor: fV, vencimento: fVc, dataPagamento: fP };
+    data[editing] = { 
+      fornecedor: fF, 
+      valor: fV, 
+      vencimento: fVc, 
+      dataPagamento: fP,
+      anexo: tempAnexoBase64,
+      anexoNome: tempAnexoNome
+    };
   } else {
-    // Modo Criação
     if (tipoRepeticao === 'unica') {
-      data.push({ fornecedor: fF, valor: fV, vencimento: fVc, dataPagamento: fP });
+      data.push({ 
+        fornecedor: fF, 
+        valor: fV, 
+        vencimento: fVc, 
+        dataPagamento: fP,
+        anexo: tempAnexoBase64,
+        anexoNome: tempAnexoNome
+      });
     } 
     else if (tipoRepeticao === 'parcelada') {
       const qtdParcelas = parseInt(document.getElementById('fQtdParcelas').value) || 2;
-      const valorParcela = (fV / qtdParcelas); // Divide o valor total entre as parcelas
+      const valorParcela = (fV / qtdParcelas);
       
       for(let i = 0; i < qtdParcelas; i++) {
         const vencimentoParcela = addMonthsToDate(fVc, i);
@@ -550,7 +607,9 @@ window.save = function(){
           fornecedor: `${fF} (${i + 1}/${qtdParcelas})`,
           valor: Number(valorParcela.toFixed(2)),
           vencimento: vencimentoParcela,
-          dataPagamento: (i === 0) ? fP : ''
+          dataPagamento: (i === 0) ? fP : '',
+          anexo: tempAnexoBase64,
+          anexoNome: tempAnexoNome
         });
       }
     } 
@@ -561,9 +620,11 @@ window.save = function(){
         const vencimentoRec = addMonthsToDate(fVc, i);
         data.push({
           fornecedor: fF,
-          valor: fV, // No modo recorrente, o valor integral se repete todo mês
+          valor: fV,
           vencimento: vencimentoRec,
-          dataPagamento: (i === 0) ? fP : ''
+          dataPagamento: (i === 0) ? fP : '',
+          anexo: tempAnexoBase64,
+          anexoNome: tempAnexoNome
         });
       }
     }
@@ -573,6 +634,31 @@ window.save = function(){
   persist();
   closeModal();
 };
+
+window.verAnexo = function(i){
+  const data = getCurrentData();
+  const item = data[i];
+  if(!item || !item.anexo) return;
+
+  const container = document.getElementById('containerAnexoPreview');
+  const btnDownload = document.getElementById('btnDownloadAnexo');
+  container.innerHTML = '';
+  
+  btnDownload.href = item.anexo;
+  btnDownload.download = item.anexoNome || 'anexo_despesa';
+
+  if (item.anexo.startsWith('data:image/')) {
+    container.innerHTML = `<img src="${item.anexo}" style="max-width:100%; border-radius:10px; box-shadow:0 2px 10px #0002;">`;
+  } else if (item.anexo.startsWith('data:application/pdf')) {
+    container.innerHTML = `<embed src="${item.anexo}" type="application/pdf" width="100%" height="500px" style="border-radius:10px;">`;
+  } else {
+    container.innerHTML = `<p>Arquivo em formato especial. Clique no botão abaixo para baixar.</p>`;
+  }
+
+  document.getElementById('modalVerAnexo').classList.add('open');
+};
+
+window.closeModalAnexo = function(){ document.getElementById('modalVerAnexo').classList.remove('open'); };
 
 window.edit = function(i){ openModal(i); };
 window.pay = function(i){ const data = getCurrentData(); data[i].dataPagamento = today(); setCurrentData(data); persist(); };
@@ -628,7 +714,8 @@ window.exportSelectedPDF = function(){
 window.exportCSV = function(){
   const data = getCurrentData();
   let lines = [['Fornecedor','Valor','Vencimento','Pagamento'], ...data.map(x => [x.fornecedor, x.valor, x.vencimento, x.dataPagamento])];
-  let csv = lines.map(r => r.join(';')).join('\n');
+  let csv = lines.map(r => r.join(';')).join('
+');
   let a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
   a.download = 'despesas.csv';
