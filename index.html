@@ -261,19 +261,19 @@ function fetchFromDrive() {
           }
           updateSyncIndicator("✓ Sincronizado", "sync-ok");
         } catch(e) {
-          updateSyncIndicator("✓ Drive conectado (Novo)", "sync-ok");
+          updateSyncIndicator("✓ Sincronizado", "sync-ok");
         }
         renderSelectControles();
         render();
       })
-      .withFailureHandler(function() {
+      .withFailureHandler(function(err) {
         updateSyncIndicator("⚠️ Erro de conexão", "");
         renderSelectControles();
         render();
       })
-      .doGet();
+      .carregarDados();
   } else {
-    updateSyncIndicator("✓ Modo Local", "sync-ok");
+    updateSyncIndicator("✓ Modo Demo", "sync-ok");
     renderSelectControles();
     render();
   }
@@ -289,7 +289,7 @@ function saveToDrive() {
       .withFailureHandler(function() {
         updateSyncIndicator("⚠️ Erro ao salvar", "");
       })
-      .doPost({ postData: { contents: JSON.stringify(appState) } });
+      .salvarDados(JSON.stringify(appState));
   } else {
     updateSyncIndicator("✓ Salvo localmente", "sync-ok");
   }
