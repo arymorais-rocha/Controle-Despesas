@@ -67,6 +67,7 @@ table{width:100%;border-collapse:collapse;min-width:850px}th,td{padding:13px 12p
   body.print-only-selected .cards{grid-template-columns:1fr!important}
   body.print-only-selected tr:not(.row-selected){display:none!important}
   table{min-width:0}th,td{font-size:11px;padding:7px}.sub{display:none}h1{color:#111}.status{border:0;animation:none!important;box-shadow:none!important}input[type=checkbox]{display:none}
+  #printDate { display: block !important; color: #111827; font-weight: 600; }
 }
 </style>
 </head>
@@ -75,6 +76,7 @@ table{width:100%;border-collapse:collapse;min-width:850px}th,td{padding:13px 12p
 <div>
   <h1>Controle de Despesas</h1>
   <div class="sub">Sincronizado automaticamente com o Google Drive</div>
+  <div id="printDate" style="display:none; font-size:12px; margin-top:5px; opacity:0.9;"></div>
 </div>
 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
   <span id="syncIndicator" class="sync-status">Carregando dados...</span>
@@ -153,7 +155,29 @@ table{width:100%;border-collapse:collapse;min-width:850px}th,td{padding:13px 12p
 <div class="grid">
   <div class="field full"><label>Fornecedor</label><input id="fFornecedor" placeholder="Ex: Mercado"></div>
   <div class="field"><label>Valor (R$)</label><input id="fValor" type="number" step="0.01" placeholder="0.00"></div>
-  <div class="field"><label>Data de vencimento</label><input id="fVenc" type="date"></div>
+  <div class="field"><label>Data do 1º Vencimento</label><input id="fVenc" type="date"></div>
+  
+  <!-- TIPO DE DESPESA -->
+  <div class="field"><label>Repetição</label>
+    <select id="fTipoRepeticao" onchange="toggleOpcoesRepeticao()">
+      <option value="unica">À Vista / Única</option>
+      <option value="parcelada">Parcelada</option>
+      <option value="recorrente">Recorrente (Mensal)</option>
+    </select>
+  </div>
+
+  <!-- OPÇÃO PARCELADA -->
+  <div class="field" id="boxParcelas" style="display:none;">
+    <label>Qtd. Parcelas</label>
+    <input id="fQtdParcelas" type="number" min="2" max="72" value="2">
+  </div>
+
+  <!-- OPÇÃO RECORRENTE -->
+  <div class="field" id="boxRecorrente" style="display:none;">
+    <label>Gerar por quantos meses?</label>
+    <input id="fQtdMesesRec" type="number" min="2" max="48" value="12">
+  </div>
+
   <div class="field full"><label>Data de pagamento (opcional)</label><input id="fPag" type="date"></div>
 </div>
 <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
@@ -182,7 +206,6 @@ table{width:100%;border-collapse:collapse;min-width:850px}th,td{padding:13px 12p
 </div></div>
 
 <script>
-// COLE O LINK DA SUA IMPLANTAÇÃO ENTRE AS ASPAS ABAIXO:
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyOA184ctVz1rpnbtzgfChkXXSEgNxjY_UMXqVkXftM6VG1luPlefrgsDoEYtlkJR8s/exec";
 
 const defaultControles = [
@@ -395,7 +418,7 @@ function getFilteredData(){
       if (!valA && valB) return 1;
       if (valA && !valB) return -1;
       if (!valA && !valB) return 0;
-      return ordenacaoAtual.direcao === 'asc' ? (valA > valB ? 1 : (valA < valB ? -1 : 0)) : (valA < valB ? 1 : (valA > valB ? -1 : 0));
+      return ordenacaoAtual.direcao === 'asc' ? (valA > valB ? 1 : (valA < valB ? -1 : 0)) : (valA < valB ? -1 : 0);
     });
   } else {
     const ordemPrioridade = { vencida: 1, hoje: 2, aberto: 3, pago: 4 };
@@ -454,39 +477,94 @@ function persist(){
   saveToDrive();
 }
 
+window.toggleOpcoesRepeticao = function() {
+  const tipo = document.getElementById('fTipoRepeticao').value;
+  document.getElementById('boxParcelas').style.display = tipo === 'parcelada' ? 'flex' : 'none';
+  document.getElementById('boxRecorrente').style.display = tipo === 'recorrente' ? 'flex' : 'none';
+};
+
 window.openModal = function(i=-1){
   editing = i;
   document.getElementById('modal').classList.add('open');
   document.getElementById('modalTitle').textContent = i < 0 ? 'Nova despesa' : 'Editar despesa';
   const data = getCurrentData();
+
   if(i >= 0){
     let x = data[i];
     document.getElementById('fFornecedor').value = x.fornecedor || '';
     document.getElementById('fValor').value = x.valor || '';
     document.getElementById('fVenc').value = x.vencimento || '';
     document.getElementById('fPag').value = x.dataPagamento || '';
+    document.getElementById('fTipoRepeticao').value = 'unica';
+    document.getElementById('fTipoRepeticao').disabled = true;
   } else {
     document.getElementById('fFornecedor').value = '';
     document.getElementById('fValor').value = '';
     document.getElementById('fVenc').value = today();
     document.getElementById('fPag').value = '';
+    document.getElementById('fTipoRepeticao').value = 'unica';
+    document.getElementById('fTipoRepeticao').disabled = false;
   }
+  toggleOpcoesRepeticao();
 };
 
 window.closeModal = function(){ document.getElementById('modal').classList.remove('open'); };
+
+function addMonthsToDate(dateStr, months) {
+  let [year, month, day] = dateStr.split('-').map(Number);
+  let d = new Date(year, month - 1 + months, day);
+  
+  let resYear = d.getFullYear();
+  let resMonth = String(d.getMonth() + 1).padStart(2, '0');
+  let resDay = String(d.getDate()).padStart(2, '0');
+  return `${resYear}-${resMonth}-${resDay}`;
+}
 
 window.save = function(){
   const fF = document.getElementById('fFornecedor').value.trim();
   const fV = Number(document.getElementById('fValor').value || 0);
   const fVc = document.getElementById('fVenc').value;
   const fP = document.getElementById('fPag').value || '';
+  const tipoRepeticao = document.getElementById('fTipoRepeticao').value;
 
   if(!fF || !fVc){ alert('Preencha o fornecedor e a data de vencimento.'); return; }
-  let x = { fornecedor: fF, valor: fV, vencimento: fVc, dataPagamento: fP };
-
+  
   const data = getCurrentData();
-  if(editing < 0) data.push(x);
-  else data[editing] = x;
+
+  if(editing >= 0) {
+    data[editing] = { fornecedor: fF, valor: fV, vencimento: fVc, dataPagamento: fP };
+  } else {
+    if (tipoRepeticao === 'unica') {
+      data.push({ fornecedor: fF, valor: fV, vencimento: fVc, dataPagamento: fP });
+    } 
+    else if (tipoRepeticao === 'parcelada') {
+      const qtdParcelas = parseInt(document.getElementById('fQtdParcelas').value) || 2;
+      const valorParcela = (fV / qtdParcelas);
+      
+      for(let i = 0; i < qtdParcelas; i++) {
+        const vencimentoParcela = addMonthsToDate(fVc, i);
+        data.push({
+          fornecedor: `${fF} (${i + 1}/${qtdParcelas})`,
+          valor: Number(valorParcela.toFixed(2)),
+          vencimento: vencimentoParcela,
+          dataPagamento: (i === 0) ? fP : ''
+        });
+      }
+    } 
+    else if (tipoRepeticao === 'recorrente') {
+      const qtdMeses = parseInt(document.getElementById('fQtdMesesRec').value) || 12;
+      
+      for(let i = 0; i < qtdMeses; i++) {
+        const vencimentoRec = addMonthsToDate(fVc, i);
+        data.push({
+          fornecedor: fF,
+          valor: fV,
+          vencimento: vencimentoRec,
+          dataPagamento: (i === 0) ? fP : ''
+        });
+      }
+    }
+  }
 
   setCurrentData(data);
   persist();
@@ -524,6 +602,21 @@ window.clearStatusFilter = function(){
 window.exportPDF = function(){ document.body.classList.remove('print-only-selected'); window.print(); };
 window.exportSelectedPDF = function(){
   if(selectedExpenses.size === 0){ alert('Marque ao menos uma despesa.'); return; }
+  
+  const hoje = new Date();
+  const dataFormatada = hoje.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  
+  const printDateEl = document.getElementById('printDate');
+  if (printDateEl) {
+    printDateEl.textContent = 'Relatório gerado em: ' + dataFormatada;
+  }
+
   document.body.classList.add('print-only-selected');
   window.print();
   document.body.classList.remove('print-only-selected');
@@ -532,7 +625,8 @@ window.exportSelectedPDF = function(){
 window.exportCSV = function(){
   const data = getCurrentData();
   let lines = [['Fornecedor','Valor','Vencimento','Pagamento'], ...data.map(x => [x.fornecedor, x.valor, x.vencimento, x.dataPagamento])];
-  let csv = lines.map(r => r.join(';')).join('\n');
+  let csv = lines.map(r => r.join(';')).join('
+');
   let a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
   a.download = 'despesas.csv';
