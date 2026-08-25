@@ -181,7 +181,6 @@ table{width:100%;border-collapse:collapse;min-width:900px}th,td{padding:13px 12p
 
   <div class="field full"><label>Data de pagamento (opcional)</label><input id="fPag" type="date"></div>
   
-  <!-- CAMPO DE ANEXO -->
   <div class="field full">
     <label>Anexar Boleto / Foto / PDF</label>
     <input id="fAnexo" type="file" accept="image/*,application/pdf" style="padding:6px; border-radius:8px;">
@@ -213,7 +212,6 @@ table{width:100%;border-collapse:collapse;min-width:900px}th,td{padding:13px 12p
 </div>
 </div></div>
 
-<!-- MODAL VISUALIZADOR DE IMAGEM -->
 <div class="modal" id="modalVerAnexo">
   <div class="box" style="width:min(800px, 95%); text-align:center;">
     <h3>Visualizar Anexo</h3>
@@ -226,11 +224,8 @@ table{width:100%;border-collapse:collapse;min-width:900px}th,td{padding:13px 12p
 </div>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyOA184ctVz1rpnbtzgfChkXXSEgNxjY_UMXqVkXftM6VG1luPlefrgsDoEYtlkJR8s/exec";
-
 const defaultControles = [
-  { id: 'romerio', nome: 'Romerio' },
-  { id: 'fazenda', nome: 'Fazenda Santa Helena' },
+  { id: 'romerio', nome: 'Romério' },
   { id: 'boa_esperanca', nome: 'Fazenda Boa Esperança' },
   { id: 'alvorada', nome: 'Fazenda Alvorada' }
 ];
@@ -254,41 +249,49 @@ function updateSyncIndicator(text, stateClass) {
   el.className = 'sync-status ' + (stateClass || '');
 }
 
-async function fetchFromDrive() {
-  if(!SCRIPT_URL || SCRIPT_URL === "SUA_URL_AQUI") {
-    updateSyncIndicator("URL do Apps Script não configurada", "");
-    return;
+function fetchFromDrive() {
+  updateSyncIndicator("☁️ Buscando dados...", "sync-loading");
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(function(resposta) {
+        try {
+          const data = typeof resposta === 'string' ? JSON.parse(resposta) : resposta;
+          if (data && data.listaControles) {
+            appState = data;
+          }
+          updateSyncIndicator("✓ Sincronizado", "sync-ok");
+        } catch(e) {
+          updateSyncIndicator("✓ Drive conectado (Novo)", "sync-ok");
+        }
+        renderSelectControles();
+        render();
+      })
+      .withFailureHandler(function() {
+        updateSyncIndicator("⚠️ Erro de conexão", "");
+        renderSelectControles();
+        render();
+      })
+      .doGet();
+  } else {
+    updateSyncIndicator("✓ Modo Local", "sync-ok");
+    renderSelectControles();
+    render();
   }
-  updateSyncIndicator("☁️ Buscando dados no Drive...", "sync-loading");
-  try {
-    const res = await fetch(SCRIPT_URL);
-    const data = await res.json();
-    if (data && data.listaControles) {
-      appState = data;
-      updateSyncIndicator("✓ Sincronizado com o Drive", "sync-ok");
-    } else {
-      updateSyncIndicator("✓ Drive conectado (Novo)", "sync-ok");
-    }
-  } catch(e) {
-    updateSyncIndicator("⚠️ Erro de conexão - Usando dados locais", "");
-  }
-  renderSelectControles();
-  render();
 }
 
-async function saveToDrive() {
-  if(!SCRIPT_URL || SCRIPT_URL === "SUA_URL_AQUI") return;
-  updateSyncIndicator("☁️ Salvando no Drive...", "sync-loading");
-  try {
-    await fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(appState)
-    });
-    updateSyncIndicator("✓ Salvo no Google Drive", "sync-ok");
-  } catch(e) {
-    updateSyncIndicator("⚠️ Erro ao salvar na nuvem", "");
+function saveToDrive() {
+  updateSyncIndicator("☁️ Salvando...", "sync-loading");
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(function() {
+        updateSyncIndicator("✓ Salvo no Google Drive", "sync-ok");
+      })
+      .withFailureHandler(function() {
+        updateSyncIndicator("⚠️ Erro ao salvar", "");
+      })
+      .doPost({ postData: { contents: JSON.stringify(appState) } });
+  } else {
+    updateSyncIndicator("✓ Salvo localmente", "sync-ok");
   }
 }
 
@@ -714,8 +717,7 @@ window.exportSelectedPDF = function(){
 window.exportCSV = function(){
   const data = getCurrentData();
   let lines = [['Fornecedor','Valor','Vencimento','Pagamento'], ...data.map(x => [x.fornecedor, x.valor, x.vencimento, x.dataPagamento])];
-  let csv = lines.map(r => r.join(';')).join('
-');
+  let csv = lines.map(r => r.join(';')).join('\n');
   let a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
   a.download = 'despesas.csv';
