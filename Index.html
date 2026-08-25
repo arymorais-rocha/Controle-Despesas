@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Controle de Despesas (Nuvem)</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:#f4f6f8;color:#1f2937}
+header{background:#111827;color:white;padding:22px 28px;display:flex;justify-content:space-between;align-items:center;gap:15px}
+h1{margin:0;font-size:24px}.sub{opacity:.75;font-size:13px;margin-top:4px}
+.container{max-width:1300px;margin:25px auto;padding:0 18px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.card{background:white;border-radius:14px;padding:18px;box-shadow:0 2px 10px #0000000d}
+.card small{color:#6b7280}.card strong{display:block;font-size:24px;margin-top:7px}
+.toolbar{background:white;padding:14px;border-radius:14px;display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;align-items:center}
+input,button,select{font:inherit}input,select{border:1px solid #d1d5db;border-radius:99px;padding:10px 14px;background:white}
+button{border:0;border-radius:99px;padding:10px 14px;cursor:pointer;font-weight:600}
+.primary{background:#111827;color:white}.secondary{background:#e5e7eb;color:#111827}.danger{background:#fee2e2;color:#991b1b}
+.table-wrap{background:white;border-radius:14px;overflow:auto;box-shadow:0 2px 10px #0000000d}
+table{width:100%;border-collapse:collapse;min-width:900px}th,td{padding:13px 12px;border-bottom:1px solid #eef0f3;text-align:left;font-size:14px}th{background:#f9fafb;color:#4b5563}
+
+.status{padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800;display:inline-block;text-transform:uppercase;letter-spacing:0.5px}
+.pago{background:#dcfce7;color:#166534}
+.aberto{background:#e0e7ff;color:#3730a3}
+.vencida{animation: piscarVencidaRapido 0.4s infinite alternate;}
+.hoje{animation: piscarHojeRapido 0.5s infinite alternate;}
+
+@keyframes piscarVencidaRapido {
+  0% { background-color: #ef4444; color: #ffffff; box-shadow: 0 0 10px rgba(239, 68, 68, 0.9); transform: scale(1.05); }
+  100% { background-color: #fee2e2; color: #991b1b; box-shadow: 0 0 0px transparent; transform: scale(0.95); }
+}
+@keyframes piscarHojeRapido {
+  0% { background-color: #f59e0b; color: #ffffff; box-shadow: 0 0 10px rgba(245, 158, 11, 0.9); transform: scale(1.05); }
+  100% { background-color: #fef3c7; color: #92400e; box-shadow: 0 0 0px transparent; transform: scale(0.95); }
+}
+
+.sync-status{font-size:12px;font-weight:700;padding:6px 12px;border-radius:99px;background:#e5e7eb;color:#374151}
+.sync-ok{background:#dcfce7;color:#166534}
+.sync-loading{background:#fef3c7;color:#92400e}
+
+.actions button{padding:6px 9px;font-size:12px;margin-right:4px}
+.modal{display:none;position:fixed;inset:0;background:#0008;align-items:center;justify-content:center;padding:15px;z-index:1000}.modal.open{display:flex}.box{background:white;border-radius:15px;padding:22px;width:min(520px,100%)}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:flex;flex-direction:column;gap:5px}.field.full{grid-column:1/-1}.field label{font-size:12px;font-weight:700;color:#4b5563}
+@media(max-width:800px){.cards{grid-template-columns:1fr 1fr}}@media(max-width:500px){.cards{grid-template-columns:1fr}.grid{grid-template-columns:1fr}}
+
+#controleSelect{min-width:180px;cursor:pointer;color:#111827;font-weight:700}
+#tbody tr{background:#fff;border:1px solid #cbd5e1;border-left:4px solid #111827;transition:background .15s,box-shadow .15s}
+#tbody tr:hover{background:#f3f4f6;box-shadow:0 2px 8px #00000012}
+#tbody tr td{font-weight:500;border-right:1px solid #e2e8f0}
+#tbody tr td:last-child{border-right:0}
+#tbody tr td:nth-child(2){font-weight:700;color:#111827}
+#tbody tr td:nth-child(3){font-weight:800;font-size:15px;color:#111827}
+
+.status-filter{position:relative;display:inline-block}
+.status-menu{display:none;position:absolute;z-index:20;top:calc(100% + 6px);left:0;background:white;border:1px solid #d1d5db;border-radius:10px;padding:10px;min-width:190px;box-shadow:0 8px 24px #0002}
+.status-menu.open{display:block}
+.status-menu label{display:flex;align-items:center;gap:8px;padding:7px 4px;cursor:pointer;font-size:13px}
+.manage-list{margin-top:15px;display:flex;flex-direction:column;gap:10px;max-height:250px;overflow-y:auto}
+.manage-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px}
+
+.btn-anexo{background:#e0e7ff;color:#3730a3;padding:5px 10px;border-radius:99px;font-size:12px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+.btn-anexo:hover{background:#c7d2fe}
+
+@media print{
+  body{background:white}
+  .toolbar,.actions,header button,header select,.sync-status,.btn-anexo{display:none!important}
+  .container{max-width:none;margin:0;padding:10px}
+  .table-wrap{box-shadow:none}
+  .cards{grid-template-columns:repeat(4,1fr)}
+  body.print-only-selected .card:not(.card-selected){display:none!important}
+  body.print-only-selected .cards{grid-template-columns:1fr!important}
+  body.print-only-selected tr:not(.row-selected){display:none!important}
+  table{min-width:0}th,td{font-size:11px;padding:7px}.sub{display:none}h1{color:#111}.status{border:0;animation:none!important;box-shadow:none!important}input[type=checkbox]{display:none}
+  #printDate { display: block !important; color: #111827; font-weight: 600; }
+}
+</style>
+</head>
+<body>
+<header>
+<div>
+  <h1>Controle de Despesas</h1>
+  <div class="sub">Sincronizado automaticamente com o Google Drive</div>
+  <div id="printDate" style="display:none; font-size:12px; margin-top:5px; opacity:0.9;"></div>
+</div>
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+  <span id="syncIndicator" class="sync-status">Carregando dados...</span>
+  <select id="controleSelect" onchange="trocarControle()"></select>
+  <button class="secondary" onclick="openNovoControleModal()">+ Novo</button>
+  <button class="secondary" onclick="openGerenciarModal()">⚙ Gerenciar</button>
+  <button class="primary" onclick="openModal()">+ Nova despesa</button>
+</div>
+</header>
+
+<div class="container">
+<div style="margin-bottom:12px;font-weight:700;font-size:18px" id="controleTitulo">Despesas</div>
+<div class="cards">
+  <div class="card"><small>A vencer</small><strong id="aberto">R$ 0,00</strong></div>
+  <div class="card"><small>Vencidas</small><strong id="vencida">R$ 0,00</strong></div>
+  <div class="card"><small>Vence hoje</small><strong id="hoje">R$ 0,00</strong></div>
+  <div class="card card-selected"><small>Total das selecionadas</small><strong id="selecionadasTotal">R$ 0,00</strong></div>
+</div>
+
+<div class="toolbar">
+  <button class="secondary" onclick="document.getElementById('controleSelect').focus()">Trocar controle</button>
+  <input id="search" placeholder="Pesquisar fornecedor..." oninput="render()">
+
+  <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600">Filtrar por:
+  <select id="tipoDataFiltro" onchange="render()" style="padding:8px 10px;font-weight:600">
+    <option value="vencimento">Data de Vencimento</option>
+    <option value="pagamento">Data de Pagamento</option>
+  </select>
+  </label>
+
+  <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600">De:
+  <input id="periodoDe" type="date" onchange="render()"></label>
+  <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600">Até:
+  <input id="periodoAte" type="date" onchange="render()"></label>
+  <button class="secondary" onclick="limparPeriodo()">Limpar período</button>
+
+  <div class="status-filter">
+    <button type="button" class="secondary" onclick="toggleStatusMenu()">Situações ▾</button>
+    <div id="statusMenu" class="status-menu">
+      <label><input type="checkbox" class="statusCheck" value="vencida" onchange="render()"> Vencidas</label>
+      <label><input type="checkbox" class="statusCheck" value="hoje" onchange="render()"> Vence hoje</label>
+      <label><input type="checkbox" class="statusCheck" value="aberto" onchange="render()"> A vencer</label>
+      <label><input type="checkbox" class="statusCheck" value="pago" onchange="render()"> Pagas</label>
+      <button type="button" class="secondary" style="width:100%;margin-top:6px" onclick="clearStatusFilter()">Limpar situações</button>
+    </div>
+  </div>
+
+  <button class="secondary" onclick="exportCSV()">Exportar CSV</button>
+  <button class="primary" onclick="exportPDF()">Exportar PDF</button>
+  <button class="primary" onclick="exportSelectedPDF()">PDF das selecionadas</button>
+  <button class="secondary" onclick="selectAllVisible()">Marcar todas</button>
+  <button class="secondary" onclick="clearSelected()">Desmarcar todas</button>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:45px;text-align:center"><input type="checkbox" id="selectAll" onchange="toggleAllVisible(this.checked)"></th>
+        <th>Fornecedor</th>
+        <th>Valor</th>
+        <th onclick="ordenarPor('vencimento')" style="cursor:pointer;user-select:none;">Vencimento <span id="setaVencimento">↕</span></th>
+        <th onclick="ordenarPor('dataPagamento')" style="cursor:pointer;user-select:none;">Pagamento <span id="setaPagamento">↕</span></th>
+        <th>Situação</th>
+        <th>Anexo</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+</div>
+
+<!-- MODAIS -->
+<div class="modal" id="modal"><div class="box">
+<h2 id="modalTitle">Nova despesa</h2>
+<div class="grid">
+  <div class="field full"><label>Fornecedor</label><input id="fFornecedor" placeholder="Ex: Mercado"></div>
+  <div class="field"><label>Valor (R$)</label><input id="fValor" type="number" step="0.01" placeholder="0.00"></div>
+  <div class="field"><label>Data do 1º Vencimento</label><input id="fVenc" type="date"></div>
+  
+  <div class="field"><label>Repetição</label>
+    <select id="fTipoRepeticao" onchange="toggleOpcoesRepeticao()">
+      <option value="unica">À Vista / Única</option>
+      <option value="parcelada">Parcelada</option>
+      <option value="recorrente">Recorrente (Mensal)</option>
+    </select>
+  </div>
+
+  <div class="field" id="boxParcelas" style="display:none;">
+    <label>Qtd. Parcelas</label>
+    <input id="fQtdParcelas" type="number" min="2" max="72" value="2">
+  </div>
+
+  <div class="field" id="boxRecorrente" style="display:none;">
+    <label>Gerar por quantos meses?</label>
+    <input id="fQtdMesesRec" type="number" min="2" max="48" value="12">
+  </div>
+
+  <div class="field full"><label>Data de pagamento (opcional)</label><input id="fPag" type="date"></div>
+  
+  <div class="field full">
+    <label>Anexar Boleto / Foto / PDF</label>
+    <input id="fAnexo" type="file" accept="image/*,application/pdf" style="padding:6px; border-radius:8px;">
+    <small id="anexoAtualInfo" style="color:#6b7280; font-weight:600; margin-top:3px;"></small>
+  </div>
+</div>
+<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
+  <button class="secondary" onclick="closeModal()">Cancelar</button>
+  <button class="primary" onclick="save()">Salvar despesa</button>
+</div>
+</div></div>
+
+<div class="modal" id="modalNovoControle"><div class="box">
+<h2>Cadastrar Novo Controle</h2>
+<div class="grid">
+  <div class="field full"><label>Nome do Controle</label><input id="fNomeControle" placeholder="Ex: Fazenda Boa Esperança"></div>
+</div>
+<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
+  <button class="secondary" onclick="closeNovoControleModal()">Cancelar</button>
+  <button class="primary" onclick="cadastrarControle()">Cadastrar</button>
+</div>
+</div></div>
+
+<div class="modal" id="modalGerenciar"><div class="box">
+<h2>Gerenciar Controles</h2>
+<div class="manage-list" id="manageList"></div>
+<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
+  <button class="primary" onclick="closeGerenciarModal()">Fechar</button>
+</div>
+</div></div>
+
+<div class="modal" id="modalVerAnexo">
+  <div class="box" style="width:min(800px, 95%); text-align:center;">
+    <h3>Visualizar Anexo</h3>
+    <div id="containerAnexoPreview" style="margin:15px 0; max-height:70vh; overflow:auto;"></div>
+    <div style="display:flex; justify-content:center; gap:10px;">
+      <a id="btnDownloadAnexo" class="primary" style="padding:10px 18px; border-radius:99px; text-decoration:none;" download="anexo">Baixar Anexo</a>
+      <button class="secondary" onclick="closeModalAnexo()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const defaultControles = [
+  { id: 'romerio', nome: 'Romério' },
+  { id: 'boa_esperanca', nome: 'Fazenda Boa Esperança' },
+  { id: 'alvorada', nome: 'Fazenda Alvorada' }
+];
+
+let appState = {
+  listaControles: defaultControles,
+  controleAtual: 'romerio',
+  despesasPorControle: {}
+};
+
+let editing = -1;
+let tempAnexoBase64 = null;
+let tempAnexoNome = null;
+let selectedExpenses = new Set();
+let ordenacaoAtual = { coluna: null, direcao: 'asc' };
+
+function updateSyncIndicator(text, stateClass) {
+  const el = document.getElementById('syncIndicator');
+  if(!el) return;
+  el.textContent = text;
+  el.className = 'sync-status ' + (stateClass || '');
+}
+
+function fetchFromDrive() {
+  updateSyncIndicator("☁️ Buscando dados...", "sync-loading");
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(function(resposta) {
+        try {
+          const data = typeof resposta === 'string' ? JSON.parse(resposta) : resposta;
+          if (data && data.listaControles) {
+            appState = data;
+          }
+          updateSyncIndicator("✓ Sincronizado", "sync-ok");
+        } catch(e) {
+          updateSyncIndicator("✓ Sincronizado", "sync-ok");
+        }
+        renderSelectControles();
+        render();
+      })
+      .withFailureHandler(function(err) {
+        updateSyncIndicator("⚠️ Erro de conexão", "");
+        renderSelectControles();
+        render();
+      })
+      .carregarDados();
+  } else {
+    updateSyncIndicator("✓ Modo Demo", "sync-ok");
+    renderSelectControles();
+    render();
+  }
+}
+
+function saveToDrive() {
+  updateSyncIndicator("☁️ Salvando...", "sync-loading");
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(function() {
+        updateSyncIndicator("✓ Salvo no Google Drive", "sync-ok");
+      })
+      .withFailureHandler(function() {
+        updateSyncIndicator("⚠️ Erro ao salvar", "");
+      })
+      .salvarDados(JSON.stringify(appState));
+  } else {
+    updateSyncIndicator("✓ Salvo localmente", "sync-ok");
+  }
+}
+
+function getCurrentData() {
+  return appState.despesasPorControle[appState.controleAtual] || [];
+}
+
+function setCurrentData(data) {
+  appState.despesasPorControle[appState.controleAtual] = data;
+}
+
+function money(v){return (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
+function today(){return new Date().toISOString().slice(0,10);}
+function status(x){
+  if(x.dataPagamento) return 'pago';
+  if(x.vencimento === today()) return 'hoje';
+  if(x.vencimento && x.vencimento < today()) return 'vencida';
+  return 'aberto';
+}
+function label(s){return s==='pago'?'Pago':s==='hoje'?'Vence hoje':s==='vencida'?'Vencida':'A vencer';}
+function fmtDate(d){if(!d)return '-';let parts=d.split('-');if(parts.length!==3)return d;return `${parts[2]}/${parts[1]}/${parts[0]}`;}
+function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function renderSelectControles(){
+  const select = document.getElementById('controleSelect');
+  if(!select) return;
+  select.innerHTML = appState.listaControles.map(c => `<option value="${c.id}">${esc(c.nome)}</option>`).join('');
+  select.value = appState.controleAtual;
+}
+
+window.trocarControle = function(){
+  appState.controleAtual = document.getElementById('controleSelect').value;
+  editing = -1;
+  selectedExpenses.clear();
+  ordenacaoAtual = { coluna: null, direcao: 'asc' };
+  atualizarSetasVisual();
+  render();
+};
+
+window.openNovoControleModal = function(){ document.getElementById('fNomeControle').value = ''; document.getElementById('modalNovoControle').classList.add('open'); };
+window.closeNovoControleModal = function(){ document.getElementById('modalNovoControle').classList.remove('open'); };
+
+window.cadastrarControle = function(){
+  const nome = document.getElementById('fNomeControle').value.trim();
+  if(!nome){ alert('Digite o nome do novo controle.'); return; }
+  const id = 'ctrl_' + Date.now();
+  appState.listaControles.push({ id, nome });
+  appState.controleAtual = id;
+  appState.despesasPorControle[id] = [];
+  persist();
+  renderSelectControles();
+  closeNovoControleModal();
+};
+
+window.openGerenciarModal = function(){ renderGerenciarLista(); document.getElementById('modalGerenciar').classList.add('open'); };
+window.closeGerenciarModal = function(){ document.getElementById('modalGerenciar').classList.remove('open'); };
+
+function renderGerenciarLista(){
+  const list = document.getElementById('manageList');
+  if(!list) return;
+  list.innerHTML = appState.listaControles.map(c => `
+    <div class="manage-item">
+      <span style="font-weight:600">${esc(c.nome)}</span>
+      <div>
+        <button class="secondary" style="padding:4px 8px;font-size:12px" onclick="renomearControle('${c.id}')">Renomear</button>
+        <button class="danger" style="padding:4px 8px;font-size:12px" onclick="excluirControle('${c.id}')">Excluir</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.renomearControle = function(id){
+  const found = appState.listaControles.find(c => c.id === id);
+  if(!found) return;
+  const novoNome = prompt('Digite o novo nome:', found.nome);
+  if(novoNome && novoNome.trim()){
+    found.nome = novoNome.trim();
+    persist();
+    renderSelectControles();
+    renderGerenciarLista();
+    render();
+  }
+};
+
+window.excluirControle = function(id){
+  if(appState.listaControles.length <= 1){ alert('Você deve manter pelo menos um controle.'); return; }
+  const found = appState.listaControles.find(c => c.id === id);
+  if(confirm(`Excluir o controle "${found ? found.nome : ''}"?`)){
+    appState.listaControles = appState.listaControles.filter(c => c.id !== id);
+    delete appState.despesasPorControle[id];
+    if(appState.controleAtual === id){
+      appState.controleAtual = appState.listaControles[0].id;
+    }
+    persist();
+    renderSelectControles();
+    renderGerenciarLista();
+    render();
+  }
+};
+
+window.ordenarPor = function(coluna) {
+  if (ordenacaoAtual.coluna === coluna) {
+    ordenacaoAtual.direcao = ordenacaoAtual.direcao === 'asc' ? 'desc' : 'asc';
+  } else {
+    ordenacaoAtual.coluna = coluna;
+    ordenacaoAtual.direcao = 'asc';
+  }
+  atualizarSetasVisual();
+  render();
+};
+
+function atualizarSetasVisual() {
+  const setaVenc = document.getElementById('setaVencimento');
+  const setaPag = document.getElementById('setaPagamento');
+  if (setaVenc) setaVenc.textContent = '↕';
+  if (setaPag) setaPag.textContent = '↕';
+  if (ordenacaoAtual.coluna === 'vencimento' && setaVenc) setaVenc.textContent = ordenacaoAtual.direcao === 'asc' ? '▲' : '▼';
+  else if (ordenacaoAtual.coluna === 'dataPagamento' && setaPag) setaPag.textContent = ordenacaoAtual.direcao === 'asc' ? '▲' : '▼';
+}
+
+function getFilteredData(){
+  const data = getCurrentData();
+  const q = (document.getElementById('search')?.value || '').toLowerCase();
+  const filters = [...document.querySelectorAll('.statusCheck:checked')].map(el=>el.value);
+  const de = document.getElementById('periodoDe')?.value || '';
+  const ate = document.getElementById('periodoAte')?.value || '';
+  const tipoData = document.getElementById('tipoDataFiltro')?.value || 'vencimento';
+
+  let resultado = data.map((x, i) => ({ ...x, i, s: status(x) }))
+    .filter(x => {
+      const matchSearch = !q || (x.fornecedor || '').toLowerCase().includes(q);
+      let matchStatus = filters.length === 0 ? x.s !== 'pago' : filters.includes(x.s);
+      const dateVal = tipoData === 'pagamento' ? (x.dataPagamento || '') : (x.vencimento || '');
+      let matchDate = true;
+      if (de || ate) {
+        if (!dateVal) matchDate = false;
+        else {
+          if (de && dateVal < de) matchDate = false;
+          if (ate && dateVal > ate) matchDate = false;
+        }
+      }
+      return matchSearch && matchStatus && matchDate;
+    });
+
+  if (ordenacaoAtual.coluna) {
+    resultado.sort((a, b) => {
+      let valA = a[ordenacaoAtual.coluna] || '';
+      let valB = b[ordenacaoAtual.coluna] || '';
+      if (!valA && valB) return 1;
+      if (valA && !valB) return -1;
+      if (!valA && !valB) return 0;
+      return ordenacaoAtual.direcao === 'asc' ? (valA > valB ? 1 : (valA < valB ? -1 : 0)) : (valA < valB ? -1 : 0);
+    });
+  } else {
+    const ordemPrioridade = { vencida: 1, hoje: 2, aberto: 3, pago: 4 };
+    resultado.sort((a, b) => {
+      const pA = ordemPrioridade[a.s] || 99;
+      const pB = ordemPrioridade[b.s] || 99;
+      if (pA !== pB) return pA - pB;
+      return (a.vencimento || '').localeCompare(b.vencimento || '');
+    });
+  }
+
+  return resultado;
+}
+
+function render(){
+  const data = getCurrentData();
+  const found = appState.listaControles.find(c => c.id === appState.controleAtual);
+  document.getElementById('controleTitulo').textContent = 'Despesas — ' + (found ? found.nome : 'Geral');
+  
+  const rows = getFilteredData();
+  document.getElementById('tbody').innerHTML = rows.map(x => {
+    const isSelected = selectedExpenses.has(x.i);
+    const btnAnexoHtml = x.anexo 
+      ? `<button class="btn-anexo" onclick="verAnexo(${x.i})">📎 Ver Anexo</button>`
+      : `<span style="color:#9ca3af;font-size:12px;">Sem anexo</span>`;
+
+    return `
+    <tr class="${isSelected ? 'row-selected' : ''}">
+      <td style="text-align:center"><input type="checkbox" class="expenseCheck" ${isSelected?'checked':''} onchange="toggleExpense(${x.i},this.checked)"></td>
+      <td>${esc(x.fornecedor)}</td>
+      <td>${money(x.valor)}</td>
+      <td>${fmtDate(x.vencimento)}</td>
+      <td>${fmtDate(x.dataPagamento)}</td>
+      <td><span class="status ${x.s}">${label(x.s)}</span></td>
+      <td>${btnAnexoHtml}</td>
+      <td class="actions">
+        <button class="secondary" onclick="edit(${x.i})">Editar</button>
+        ${x.dataPagamento?'':`<button class="primary" onclick="pay(${x.i})">Pagar</button>`}
+        <button class="danger" onclick="del(${x.i})">Excluir</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const sums = {aberto:0, vencida:0, hoje:0};
+  data.forEach(x => {
+    const st = status(x);
+    if(st !== 'pago') sums[st] += Number(x.valor)||0;
+  });
+
+  let totalSelecionadas = 0;
+  selectedExpenses.forEach(i => { if(data[i]) totalSelecionadas += Number(data[i].valor) || 0; });
+
+  document.getElementById('aberto').textContent = money(sums.aberto);
+  document.getElementById('vencida').textContent = money(sums.vencida);
+  document.getElementById('hoje').textContent = money(sums.hoje);
+  document.getElementById('selecionadasTotal').textContent = money(totalSelecionadas);
+}
+
+function persist(){
+  render();
+  saveToDrive();
+}
+
+window.toggleOpcoesRepeticao = function() {
+  const tipo = document.getElementById('fTipoRepeticao').value;
+  document.getElementById('boxParcelas').style.display = tipo === 'parcelada' ? 'flex' : 'none';
+  document.getElementById('boxRecorrente').style.display = tipo === 'recorrente' ? 'flex' : 'none';
+};
+
+window.openModal = function(i=-1){
+  editing = i;
+  document.getElementById('modal').classList.add('open');
+  document.getElementById('modalTitle').textContent = i < 0 ? 'Nova despesa' : 'Editar despesa';
+  document.getElementById('fAnexo').value = '';
+  
+  const data = getCurrentData();
+
+  if(i >= 0){
+    let x = data[i];
+    document.getElementById('fFornecedor').value = x.fornecedor || '';
+    document.getElementById('fValor').value = x.valor || '';
+    document.getElementById('fVenc').value = x.vencimento || '';
+    document.getElementById('fPag').value = x.dataPagamento || '';
+    document.getElementById('fTipoRepeticao').value = 'unica';
+    document.getElementById('fTipoRepeticao').disabled = true;
+    tempAnexoBase64 = x.anexo || null;
+    tempAnexoNome = x.anexoNome || null;
+    document.getElementById('anexoAtualInfo').textContent = x.anexo ? `Já possui anexo: ${x.anexoNome || 'Anexo'}` : '';
+  } else {
+    document.getElementById('fFornecedor').value = '';
+    document.getElementById('fValor').value = '';
+    document.getElementById('fVenc').value = today();
+    document.getElementById('fPag').value = '';
+    document.getElementById('fTipoRepeticao').value = 'unica';
+    document.getElementById('fTipoRepeticao').disabled = false;
+    tempAnexoBase64 = null;
+    tempAnexoNome = null;
+    document.getElementById('anexoAtualInfo').textContent = '';
+  }
+  toggleOpcoesRepeticao();
+};
+
+window.closeModal = function(){ document.getElementById('modal').classList.remove('open'); };
+
+function addMonthsToDate(dateStr, months) {
+  let [year, month, day] = dateStr.split('-').map(Number);
+  let d = new Date(year, month - 1 + months, day);
+  
+  let resYear = d.getFullYear();
+  let resMonth = String(d.getMonth() + 1).padStart(2, '0');
+  let resDay = String(d.getDate()).padStart(2, '0');
+  return `${resYear}-${resMonth}-${resDay}`;
+}
+
+window.save = async function(){
+  const fF = document.getElementById('fFornecedor').value.trim();
+  const fV = Number(document.getElementById('fValor').value || 0);
+  const fVc = document.getElementById('fVenc').value;
+  const fP = document.getElementById('fPag').value || '';
+  const tipoRepeticao = document.getElementById('fTipoRepeticao').value;
+  const inputAnexo = document.getElementById('fAnexo');
+
+  if(!fF || !fVc){ alert('Preencha o fornecedor e a data de vencimento.'); return; }
+  
+  if (inputAnexo.files && inputAnexo.files[0]) {
+    const file = inputAnexo.files[0];
+    tempAnexoNome = file.name;
+    tempAnexoBase64 = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const data = getCurrentData();
+
+  if(editing >= 0) {
+    data[editing] = { 
+      fornecedor: fF, 
+      valor: fV, 
+      vencimento: fVc, 
+      dataPagamento: fP,
+      anexo: tempAnexoBase64,
+      anexoNome: tempAnexoNome
+    };
+  } else {
+    if (tipoRepeticao === 'unica') {
+      data.push({ 
+        fornecedor: fF, 
+        valor: fV, 
+        vencimento: fVc, 
+        dataPagamento: fP,
+        anexo: tempAnexoBase64,
+        anexoNome: tempAnexoNome
+      });
+    } 
+    else if (tipoRepeticao === 'parcelada') {
+      const qtdParcelas = parseInt(document.getElementById('fQtdParcelas').value) || 2;
+      const valorParcela = (fV / qtdParcelas);
+      
+      for(let i = 0; i < qtdParcelas; i++) {
+        const vencimentoParcela = addMonthsToDate(fVc, i);
+        data.push({
+          fornecedor: `${fF} (${i + 1}/${qtdParcelas})`,
+          valor: Number(valorParcela.toFixed(2)),
+          vencimento: vencimentoParcela,
+          dataPagamento: (i === 0) ? fP : '',
+          anexo: tempAnexoBase64,
+          anexoNome: tempAnexoNome
+        });
+      }
+    } 
+    else if (tipoRepeticao === 'recorrente') {
+      const qtdMeses = parseInt(document.getElementById('fQtdMesesRec').value) || 12;
+      
+      for(let i = 0; i < qtdMeses; i++) {
+        const vencimentoRec = addMonthsToDate(fVc, i);
+        data.push({
+          fornecedor: fF,
+          valor: fV,
+          vencimento: vencimentoRec,
+          dataPagamento: (i === 0) ? fP : '',
+          anexo: tempAnexoBase64,
+          anexoNome: tempAnexoNome
+        });
+      }
+    }
+  }
+
+  setCurrentData(data);
+  persist();
+  closeModal();
+};
+
+window.verAnexo = function(i){
+  const data = getCurrentData();
+  const item = data[i];
+  if(!item || !item.anexo) return;
+
+  const container = document.getElementById('containerAnexoPreview');
+  const btnDownload = document.getElementById('btnDownloadAnexo');
+  container.innerHTML = '';
+  
+  btnDownload.href = item.anexo;
+  btnDownload.download = item.anexoNome || 'anexo_despesa';
+
+  if (item.anexo.startsWith('data:image/')) {
+    container.innerHTML = `<img src="${item.anexo}" style="max-width:100%; border-radius:10px; box-shadow:0 2px 10px #0002;">`;
+  } else if (item.anexo.startsWith('data:application/pdf')) {
+    container.innerHTML = `<embed src="${item.anexo}" type="application/pdf" width="100%" height="500px" style="border-radius:10px;">`;
+  } else {
+    container.innerHTML = `<p>Arquivo em formato especial. Clique no botão abaixo para baixar.</p>`;
+  }
+
+  document.getElementById('modalVerAnexo').classList.add('open');
+};
+
+window.closeModalAnexo = function(){ document.getElementById('modalVerAnexo').classList.remove('open'); };
+
+window.edit = function(i){ openModal(i); };
+window.pay = function(i){ const data = getCurrentData(); data[i].dataPagamento = today(); setCurrentData(data); persist(); };
+window.del = function(i){ if(confirm('Excluir esta despesa?')){ const data = getCurrentData(); selectedExpenses.delete(i); data.splice(i,1); setCurrentData(data); persist(); } };
+
+window.toggleExpense = function(i, checked){
+  if(checked) selectedExpenses.add(i);
+  else selectedExpenses.delete(i);
+  render();
+};
+
+window.toggleAllVisible = function(checked){
+  getFilteredData().forEach(x => checked ? selectedExpenses.add(x.i) : selectedExpenses.delete(x.i));
+  render();
+};
+
+window.selectAllVisible = function(){ toggleAllVisible(true); };
+window.clearSelected = function(){ selectedExpenses.clear(); render(); };
+window.limparPeriodo = function(){
+  document.getElementById('periodoDe').value = '';
+  document.getElementById('periodoAte').value = '';
+  render();
+};
+window.toggleStatusMenu = function(){ document.getElementById('statusMenu').classList.toggle('open'); };
+window.clearStatusFilter = function(){
+  document.querySelectorAll('.statusCheck').forEach(el=>el.checked=false);
+  render();
+};
+
+window.exportPDF = function(){ document.body.classList.remove('print-only-selected'); window.print(); };
+window.exportSelectedPDF = function(){
+  if(selectedExpenses.size === 0){ alert('Marque ao menos uma despesa.'); return; }
+  
+  const hoje = new Date();
+  const dataFormatada = hoje.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  
+  const printDateEl = document.getElementById('printDate');
+  if (printDateEl) {
+    printDateEl.textContent = 'Relatório gerado em: ' + dataFormatada;
+  }
+
+  document.body.classList.add('print-only-selected');
+  window.print();
+  document.body.classList.remove('print-only-selected');
+};
+
+window.exportCSV = function(){
+  const data = getCurrentData();
+  let lines = [['Fornecedor','Valor','Vencimento','Pagamento'], ...data.map(x => [x.fornecedor, x.valor, x.vencimento, x.dataPagamento])];
+  let csv = lines.map(r => r.join(';')).join('\n');
+  let a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = 'despesas.csv';
+  a.click();
+};
+
+window.addEventListener('DOMContentLoaded', () => {
+  fetchFromDrive();
+});
+</script>
+</body>
+</html>
