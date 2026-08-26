@@ -5,714 +5,688 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Controle de Despesas</title>
   
-  <!-- Bibliotecas para geração do PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
   <style>
-    :root {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --text: #f8fafc;
-      --subtext: #94a3b8;
-      --accent: #3b82f6;
-      --accent-hover: #2563eb;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --border: #334155;
-    }
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
+    body { background-color: #0b1325; color: #ffffff; padding: 20px; }
+    
+    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .title-section h1 { font-size: 24px; font-weight: bold; }
+    .sync-status { font-size: 12px; color: #a0aec0; margin-top: 4px; }
+    .sync-badge { background-color: #1c3d32; color: #38ef7d; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding: 20px; line-height: 1.5; }
-    .container { max-width: 1200px; margin: 0 auto; }
+    .top-buttons { display: flex; gap: 10px; }
+    .btn-top { background-color: #1e293b; color: #fff; border: 1px solid #334155; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; }
+    .btn-top:hover { background-color: #334155; }
+    .btn-top-primary { background-color: #0066ff; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; }
+    .btn-top-primary:hover { background-color: #0052cc; }
 
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
-    .header-title h1 { font-size: 1.8rem; font-weight: 700; }
-    .header-sub { font-size: 0.85rem; color: var(--subtext); display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+    .cards-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+    .card { background: #ffffff; color: #1e293b; padding: 15px; border-radius: 8px; }
+    .card-title { font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 5px; }
+    .card-value { font-size: 20px; font-weight: bold; }
 
-    .sync-indicator { font-size: 0.8rem; padding: 4px 10px; border-radius: 20px; background: rgba(255,255,255,0.1); }
-    .sync-ok { color: var(--success); background: rgba(16, 185, 129, 0.15); }
-    .sync-loading { color: var(--warning); background: rgba(245, 158, 11, 0.15); }
+    .filter-bar { background-color: #131f37; padding: 12px; border-radius: 8px; margin-bottom: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .filter-select, .filter-input { background: #1e293b; border: 1px solid #334155; color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 13px; }
+    .filter-input-search { flex: 1; }
 
-    .header-controls { display: flex; gap: 10px; align-items: center; }
-    select, input[type="text"], input[type="number"], input[type="date"], button { 
-      background: var(--card-bg); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 8px; font-size: 0.9rem; outline: none; 
-    }
-    button { cursor: pointer; background: var(--accent); border: none; font-weight: 600; transition: 0.2s; }
-    button:hover { background: var(--accent-hover); }
-    .btn-secondary { background: var(--card-bg); border: 1px solid var(--border); }
-    .btn-secondary:hover { background: var(--border); }
-    .btn-pdf { background: #10b981; color: #fff; }
-    .btn-pdf:hover { background: #059669; }
+    .action-bar { background-color: #131f37; padding: 10px 12px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .checkbox-filters { display: flex; gap: 15px; align-items: center; font-size: 13px; flex-wrap: wrap; }
+    .checkbox-filters label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+    .btn-desmarcar { background: none; border: none; color: #a0aec0; cursor: pointer; font-size: 12px; text-decoration: underline; margin-left: 15px; }
 
-    .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px; }
-    .card { background: #ffffff; color: #0f172a; padding: 18px; border-radius: 12px; }
-    .card span { font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
-    .card h2 { font-size: 1.6rem; margin-top: 5px; }
+    .btn-group-right { display: flex; gap: 8px; align-items: center; }
+    .btn-pagar-selecionadas { background-color: #28a745; color: #fff; border: none; padding: 7px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+    .btn-pagar-selecionadas:hover { background-color: #218838; }
+    .btn-pdf { background-color: #dc3545; color: #fff; border: none; padding: 7px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+    .btn-pdf:hover { background-color: #c82333; }
+    .btn-csv { background-color: #1e293b; color: #fff; border: 1px solid #334155; padding: 7px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
 
-    .filters-bar { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
-    .filters-bar input[type="text"] { flex: 1; min-width: 200px; }
+    .table-container { background: #ffffff; border-radius: 8px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; color: #1e293b; font-size: 13px; }
+    th { background: #ffffff; text-align: left; padding: 12px; border-bottom: 2px solid #edf2f7; color: #4a5568; font-weight: 600; }
+    td { padding: 12px; border-bottom: 1px solid #edf2f7; }
+    
+    .badge-status { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; display: inline-block; }
+    .badge-vencida { background-color: #ffd6d6; color: #e53e3e; }
+    .badge-aberto { background-color: #e0e7ff; color: #4338ca; }
+    .badge-paga { background-color: #d1fae5; color: #047857; }
 
-    .quick-select-group { display: flex; align-items: center; gap: 12px; background: rgba(255, 255, 255, 0.05); padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); }
-    .quick-select-group label { font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; }
-    .quick-select-group input[type="checkbox"] { cursor: pointer; width: 15px; height: 15px; accent-color: var(--accent); }
+    .btn-action-icon { background: #1e293b; color: #fff; border: none; width: 28px; height: 28px; border-radius: 4px; cursor: pointer; margin-right: 2px; }
+    .btn-action-icon:hover { background: #334155; }
 
-    .action-buttons { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
-
-    .table-container { background: #ffffff; border-radius: 12px; overflow-x: auto; color: #0f172a; }
-    table { width: 100%; border-collapse: collapse; text-align: left; }
-    th, td { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
-    th { background: #f8fafc; color: #475569; font-weight: 600; }
-    tr:hover { background: #f1f5f9; }
-
-    .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
-    .badge-vencida { background: #fee2e2; color: #dc2626; }
-    .badge-hoje { background: #fef3c7; color: #b45309; }
-    .badge-paga { background: #d1fae5; color: #059669; }
-    .badge-pendente { background: #e0f2fe; color: #0369a1; }
-
-    @keyframes piscarVermelho {
-      0%, 100% { color: #dc2626; opacity: 1; }
-      50% { color: #991b1b; opacity: 0.2; }
-    }
-
-    @keyframes piscarAmarelo {
-      0%, 100% { color: #d97706; opacity: 1; }
-      50% { color: #92400e; opacity: 0.2; }
-    }
-
-    .fornecedor-vencido { animation: piscarVermelho 1s infinite; font-weight: 700; }
-    .fornecedor-hoje { animation: piscarAmarelo 1s infinite; font-weight: 700; }
-
-    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; padding: 20px; z-index: 1000; }
-    .modal.open { display: flex; }
-    .modal-content { background: var(--card-bg); border-radius: 12px; width: 100%; max-width: 500px; padding: 24px; position: relative; max-height: 90vh; overflow-y: auto; }
-    .modal-header { font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; }
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; }
+    .modal-overlay.active { display: flex; }
+    .modal-box { background: #131f37; border-radius: 10px; width: 100%; max-width: 500px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); color: #fff; border: 1px solid #334155; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+    .modal-header h2 { font-size: 18px; color: #fff; font-weight: bold; }
+    .modal-close { background: none; border: none; color: #a0aec0; font-size: 20px; cursor: pointer; }
     .form-group { margin-bottom: 15px; }
-    .form-group label { display: block; font-size: 0.85rem; color: var(--subtext); margin-bottom: 5px; }
-    .form-group input, .form-group select { width: 100%; }
-    .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .form-group label { display: block; font-size: 12px; font-weight: bold; color: #cbd5e1; margin-bottom: 6px; text-transform: uppercase; }
+    .form-group input, .form-group select { width: 100%; background: #1e293b; border: 1px solid #334155; color: #fff; padding: 10px; border-radius: 6px; font-size: 14px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid #334155; padding-top: 15px; }
+    .btn-cancelar { background: #334155; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    .btn-salvar { background: #0066ff; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; }
+    .btn-salvar:hover { background: #0052cc; }
+
+    .controles-list { list-style: none; margin-bottom: 15px; max-height: 180px; overflow-y: auto; }
+    .controles-list li { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #1e293b; border-radius: 6px; margin-bottom: 6px; }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <header>
-      <div class="header-title">
-        <h1>Controle de Despesas</h1>
-        <div class="header-sub">
-          <span>Sincronizado com o Google Drive</span>
-          <span id="syncIndicator" class="sync-indicator sync-ok">✓ Sincronizado</span>
-        </div>
-      </div>
-      <div class="header-controls">
-        <button class="btn-secondary" onclick="openControlModal()">⚙️ Gerenciar Controles</button>
-        <button onclick="openModal()">+ Nova despesa</button>
-      </div>
-    </header>
-
-    <div class="cards-grid">
-      <div class="card"><span>A vencer</span><h2 id="cardAVencer">R$ 0,00</h2></div>
-      <div class="card"><span>Vencidas</span><h2 id="cardVencidas">R$ 0,00</h2></div>
-      <div class="card"><span>Vence hoje</span><h2 id="cardVenceHoje">R$ 0,00</h2></div>
-      <div class="card"><span>Total das selecionadas</span><h2 id="cardSelecionadas">R$ 0,00</h2></div>
+  <div class="header-top">
+    <div class="title-section">
+      <h1>Controle de Despesas</h1>
+      <div class="sync-status">Sincronizado com o Google Drive <span class="sync-badge">✓ Sincronizado</span></div>
     </div>
+    <div class="top-buttons">
+      <button class="btn-top" onclick="abrirModalControles()">⚙ Gerenciar Controles</button>
+      <button class="btn-top-primary" onclick="abrirModalNovaDespesa()">+ Nova Despesa</button>
+    </div>
+  </div>
 
-    <div class="filters-bar">
-      <label style="font-size: 0.85rem; color: var(--subtext);">Controle:</label>
-      <select id="selectControleAtual" onchange="mudarControle(this.value)"></select>
+  <div class="cards-grid">
+    <div class="card">
+      <div class="card-title">A Vencer</div>
+      <div class="card-value" id="card-a-vencer">R$ 0,00</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Vencidas</div>
+      <div class="card-value" id="card-vencidas">R$ 0,00</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Vence Hoje</div>
+      <div class="card-value" id="card-vence-hoje">R$ 0,00</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Total Selecionadas</div>
+      <div class="card-value" id="card-total-selecionadas">R$ 0,00</div>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <select class="filter-select" id="select-controle" onchange="filtrarDespesas()"></select>
+    <input type="text" id="input-busca" class="filter-input filter-input-search" placeholder="Pesquisar fornecedor..." onkeyup="filtrarDespesas()">
+    <span style="font-size: 12px; color: #a0aec0;">De:</span>
+    <input type="date" id="data-de" class="filter-input" onchange="filtrarDespesas()">
+    <span style="font-size: 12px; color: #a0aec0;">Até:</span>
+    <input type="date" id="data-ate" class="filter-input" onchange="filtrarDespesas()">
+    <button class="btn-top" onclick="limparFiltros()">✕</button>
+  </div>
+
+  <div class="action-bar">
+    <div class="checkbox-filters">
+      <label><input type="checkbox" class="filter-status" value="VENCE HOJE" onchange="filtrarDespesas()"> Vence Hoje</label>
+      <label><input type="checkbox" class="filter-status" value="VENCIDA" onchange="filtrarDespesas()"> Vencidas</label>
+      <label><input type="checkbox" class="filter-status" value="EM ABERTO" checked onchange="filtrarDespesas()"> Em Aberto</label>
+      <label><input type="checkbox" class="filter-status" id="chk-pagas" value="PAGA" onchange="filtrarDespesas()"> Pagas</label>
+      <label><input type="checkbox" class="filter-status" id="chk-todas" value="TODAS" onchange="marcarTodasStatus(this)"> Todas</label>
+      <button class="btn-desmarcar" onclick="desmarcarTodosStatus()">Desmarcar Tudo</button>
+    </div>
+    <div class="btn-group-right">
+      <button type="button" class="btn-pagar-selecionadas" onclick="pagarSelecionadasHoje()">✓ Pagar Selecionadas</button>
+      <button type="button" class="btn-pdf" onclick="gerarPDF()">📄 PDF Selecionadas</button>
+      <button type="button" class="btn-csv" onclick="exportarCSV()">CSV</button>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 30px;"><input type="checkbox" id="check-master" onclick="toggleSelectAll(this)"></th>
+          <th>Fornecedor ↕</th>
+          <th>Valor ↕</th>
+          <th>Vencimento ▲</th>
+          <th>Pagamento ↕</th>
+          <th>Situação</th>
+          <th>Anexo</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="tabela-corpo">
+        <tr data-id="1" data-controle="Fazenda Boa Esperança" data-status="VENCIDA">
+          <td><input type="checkbox" class="check-item" onchange="atualizarSomaSelecionadas()"></td>
+          <td style="color: #e53e3e; font-weight: 500;">teste</td>
+          <td>R$ 20,00</td>
+          <td>25/08/2026</td>
+          <td class="td-pagamento">-</td>
+          <td class="td-situacao"><span class="badge-status badge-vencida">VENCIDA</span></td>
+          <td>-</td>
+          <td>
+            <button class="btn-action-icon" onclick="abrirModalEdicao(this)" title="Editar Completo">✏️</button>
+            <button class="btn-action-icon" onclick="excluirDespesa(this)" title="Excluir">🗑️</button>
+          </td>
+        </tr>
+        <tr data-id="2" data-controle="Fazenda Boa Esperança" data-status="EM ABERTO">
+          <td><input type="checkbox" class="check-item" onchange="atualizarSomaSelecionadas()"></td>
+          <td style="font-weight: bold;">BOLETO COMIGO- MATERIAIS INSEMINAÇÃO 5/6</td>
+          <td>R$ 2.077,40</td>
+          <td>10/09/2026</td>
+          <td class="td-pagamento">-</td>
+          <td class="td-situacao"><span class="badge-status badge-aberto">EM ABERTO</span></td>
+          <td>-</td>
+          <td>
+            <button class="btn-action-icon" onclick="abrirModalEdicao(this)" title="Editar Completo">✏️</button>
+            <button class="btn-action-icon" onclick="excluirDespesa(this)" title="Excluir">🗑️</button>
+          </td>
+        </tr>
+        <tr data-id="3" data-controle="Fazenda Boa Esperança" data-status="EM ABERTO">
+          <td><input type="checkbox" class="check-item" onchange="atualizarSomaSelecionadas()"></td>
+          <td style="font-weight: bold;">BOLETO COMIGO- MATERIAIS INSEMINAÇÃO 6/6</td>
+          <td>R$ 2.082,40</td>
+          <td>10/10/2026</td>
+          <td class="td-pagamento">-</td>
+          <td class="td-situacao"><span class="badge-status badge-aberto">EM ABERTO</span></td>
+          <td>-</td>
+          <td>
+            <button class="btn-action-icon" onclick="abrirModalEdicao(this)" title="Editar Completo">✏️</button>
+            <button class="btn-action-icon" onclick="excluirDespesa(this)" title="Excluir">🗑️</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- MODAL DE EDIÇÃO / CRIAÇÃO DE DESPESA -->
+  <div class="modal-overlay" id="modal-edicao">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="modal-edicao-titulo">Editar Despesa</h2>
+        <button class="modal-close" onclick="fecharModalEdicao()">✕</button>
+      </div>
+      <form id="form-editar" onsubmit="salvarEdicao(event)">
+        <div class="form-group">
+          <label for="edit-controle">Controle / Conta</label>
+          <select id="edit-controle" required></select>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-fornecedor">Fornecedor / Descrição</label>
+          <input type="text" id="edit-fornecedor" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-valor">Valor (R$)</label>
+            <input type="text" id="edit-valor" placeholder="0,00" required>
+          </div>
+          <div class="form-group">
+            <label for="edit-vencimento">Data Vencimento</label>
+            <input type="date" id="edit-vencimento" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-situacao">Situação</label>
+            <select id="edit-situacao" onchange="aoMudarSituacaoModal()">
+              <option value="EM ABERTO">EM ABERTO</option>
+              <option value="VENCIDA">VENCIDA</option>
+              <option value="VENCE HOJE">VENCE HOJE</option>
+              <option value="PAGA">PAGA</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="edit-pagamento">Data Pagamento (Retroativa ou Atual)</label>
+            <input type="date" id="edit-pagamento">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-cancelar" onclick="fecharModalEdicao()">Cancelar</button>
+          <button type="submit" class="btn-salvar">Salvar Alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL GERENCIAR CONTROLES -->
+  <div class="modal-overlay" id="modal-controles">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>Gerenciar Controles</h2>
+        <button class="modal-close" onclick="fecharModalControles()">✕</button>
+      </div>
       
-      <div class="quick-select-group">
-        <label style="color: #f87171;">
-          <input type="checkbox" id="chkVencidas" onchange="toggleStatusGroup('vencidas', this.checked)"> Vencidas
-        </label>
-        <label style="color: #60a5fa;">
-          <input type="checkbox" id="chkAVencer" onchange="toggleStatusGroup('aVencer', this.checked)"> A Vencer
-        </label>
-        <label style="color: #34d399;">
-          <input type="checkbox" id="chkPagas" onchange="toggleStatusGroup('pagas', this.checked)"> Pagas
-        </label>
-      </div>
+      <ul class="controles-list" id="lista-controles-modal"></ul>
 
-      <input type="text" id="filterBusca" placeholder="Pesquisar fornecedor..." oninput="render()">
-      <label style="font-size: 0.85rem; color: var(--subtext);">De:</label>
-      <input type="date" id="filterDe" onchange="render()">
-      <label style="font-size: 0.85rem; color: var(--subtext);">Até:</label>
-      <input type="date" id="filterAte" onchange="render()">
-      <button class="btn-secondary" onclick="limparFiltros()">Limpar período</button>
-    </div>
-
-    <div class="action-buttons">
-      <button class="btn-secondary" onclick="exportCSV()">Exportar CSV</button>
-      <button class="btn-pdf" onclick="exportPDFSelecionadas()">📄 PDF das Selecionadas</button>
-      <button class="btn-secondary" onclick="marcarTodas(true)">Marcar todas</button>
-      <button class="btn-secondary" onclick="marcarTodas(false)">Desmarcar todas</button>
-    </div>
-
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th width="40"><input type="checkbox" id="checkAll" onchange="toggleSelectAll(this.checked)"></th>
-            <th>Fornecedor</th>
-            <th>Valor</th>
-            <th>Vencimento</th>
-            <th>Pagamento</th>
-            <th>Situação</th>
-            <th>Anexo</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Modal Cadastro/Edição -->
-  <div class="modal" id="modalDespesa">
-    <div class="modal-content">
-      <div class="modal-header" id="modalTitle">Nova Despesa</div>
       <div class="form-group">
-        <label>Fornecedor</label>
-        <input type="text" id="fFornecedor" placeholder="Ex: Posto Trevo">
-      </div>
-      <div class="form-group">
-        <label>Valor (R$)</label>
-        <input type="number" step="0.01" id="fValor" placeholder="0.00">
-      </div>
-      <div class="form-group">
-        <label>Data de Vencimento</label>
-        <input type="date" id="fVenc">
-      </div>
-      <div class="form-group">
-        <label>Data de Pagamento</label>
-        <input type="date" id="fPag">
-      </div>
-      <div class="form-group">
-        <label>Comprovante/Anexo (Imagem ou PDF)</label>
-        <input type="file" id="fAnexo" accept="image/*,.pdf">
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
-        <button onclick="save()" id="btnSalvar">Salvar Despesa</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Gerenciar Controles -->
-  <div class="modal" id="modalControles">
-    <div class="modal-content">
-      <div class="modal-header">Gerenciar Controles</div>
-      <div class="form-group">
-        <label>Adicionar Novo Controle</label>
+        <label for="novo-controle-nome">Adicionar Novo Controle</label>
         <div style="display: flex; gap: 8px;">
-          <input type="text" id="novoControleNome" placeholder="Ex: Fazenda Boa Esperança">
-          <button onclick="adicionarControle()">Adicionar</button>
+          <input type="text" id="novo-controle-nome" placeholder="Nome do Controle (ex: Fazenda Nova)">
+          <button type="button" class="btn-salvar" onclick="adicionarNovoControle()">Adicionar</button>
         </div>
       </div>
-      <div class="form-group">
-        <label>Controles Existentes</label>
-        <ul id="listaControlesUI" style="list-style: none; padding: 0;"></ul>
-      </div>
+
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeControlModal()">Fechar</button>
+        <button type="button" class="btn-cancelar" onclick="fecharModalControles()">Fechar</button>
       </div>
     </div>
   </div>
 
   <script>
-    let appState = {
-      controleAtual: "Geral",
-      listaControles: ["Geral", "Romerio", "Fazenda Boa Esperança", "Fazenda Alvorada"],
-      despesas: []
-    };
+    let linhaEmEdicao = null;
+    let controles = ["Romerio", "Fazenda Boa Esperança", "Fazenda Alvorada"];
 
-    let selectedIndexes = new Set();
-    let editingIndex = -1;
+    window.addEventListener('DOMContentLoaded', () => {
+      atualizarSelectsControles();
+      filtrarDespesas();
+    });
 
-    function updateSyncIndicator(text, className) {
-      const el = document.getElementById('syncIndicator');
-      if (el) {
-        el.innerText = text;
-        el.className = 'sync-indicator ' + (className || '');
+    function atualizarSelectsControles() {
+      const selectFiltro = document.getElementById('select-controle');
+      const selectForm = document.getElementById('edit-controle');
+      const valorFiltroAtual = selectFiltro.value || 'Fazenda Boa Esperança';
+      const valorFormAtual = selectForm.value;
+
+      selectFiltro.innerHTML = '<option value="TODOS">Todos os Controles</option>';
+      selectForm.innerHTML = '';
+
+      controles.forEach(c => {
+        selectFiltro.innerHTML += `<option value="${c}">${c}</option>`;
+        selectForm.innerHTML += `<option value="${c}">${c}</option>`;
+      });
+
+      selectFiltro.value = controles.includes(valorFiltroAtual) ? valorFiltroAtual : 'TODOS';
+      if (valorFormAtual && controles.includes(valorFormAtual)) {
+        selectForm.value = valorFormAtual;
       }
     }
 
-    window.onload = function() {
-      fetchFromDrive();
-    };
-
-    function fetchFromDrive() {
-      updateSyncIndicator("☁️ Buscando dados...", "sync-loading");
-
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler(function(resposta) {
-            try {
-              if (resposta) {
-                let parsed = typeof resposta === 'string' ? JSON.parse(resposta) : resposta;
-                if (parsed && parsed.listaControles) {
-                  appState = parsed;
-                }
-              }
-              updateSyncIndicator("✓ Sincronizado", "sync-ok");
-            } catch(e) {
-              updateSyncIndicator("✓ Conectado", "sync-ok");
-            }
-            renderSelectControles();
-            render();
-          })
-          .withFailureHandler(function() {
-            updateSyncIndicator("⚠️ Modo Local", "");
-            renderSelectControles();
-            render();
-          })
-          .carregarDados();
-      } else {
-        updateSyncIndicator("✓ Modo Demo", "sync-ok");
-        renderSelectControles();
-        render();
-      }
+    function abrirModalControles() {
+      renderizarListaControlesModal();
+      document.getElementById('modal-controles').classList.add('active');
     }
 
-    function persist() {
-      updateSyncIndicator("☁️ Salvando...", "sync-loading");
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler(function() {
-            updateSyncIndicator("✓ Sincronizado", "sync-ok");
-          })
-          .salvarDados(JSON.stringify(appState));
-      }
+    function fecharModalControles() {
+      document.getElementById('modal-controles').classList.remove('active');
     }
 
-    function getCurrentData() {
-      return appState.despesas.filter(d => (d.controle || "Geral") === appState.controleAtual);
-    }
-
-    function renderSelectControles() {
-      const select = document.getElementById('selectControleAtual');
-      select.innerHTML = '';
-      appState.listaControles.forEach(ctrl => {
-        const opt = document.createElement('option');
-        opt.value = ctrl;
-        opt.innerText = ctrl;
-        if (ctrl === appState.controleAtual) opt.selected = true;
-        select.appendChild(opt);
+    function renderizarListaControlesModal() {
+      const lista = document.getElementById('lista-controles-modal');
+      lista.innerHTML = '';
+      controles.forEach((c, index) => {
+        lista.innerHTML += `
+          <li>
+            <span>${c}</span>
+            <div>
+              <button class="btn-action-icon" onclick="editarNomeControle(${index})">✏️</button>
+              <button class="btn-action-icon" onclick="excluirControle(${index})">🗑️</button>
+            </div>
+          </li>
+        `;
       });
     }
 
-    function mudarControle(novoControle) {
-      appState.controleAtual = novoControle;
-      selectedIndexes.clear();
-      resetCheckboxesStatus();
-      render();
+    function adicionarNovoControle() {
+      const input = document.getElementById('novo-controle-nome');
+      const nome = input.value.trim();
+      if (!nome) return alert('Digite um nome válido.');
+      if (controles.includes(nome)) return alert('Este controle já existe.');
+
+      controles.push(nome);
+      input.value = '';
+      renderizarListaControlesModal();
+      atualizarSelectsControles();
     }
 
-    function resetCheckboxesStatus() {
-      document.getElementById('chkVencidas').checked = false;
-      document.getElementById('chkAVencer').checked = false;
-      document.getElementById('chkPagas').checked = false;
+    function editarNomeControle(index) {
+      const antigo = controles[index];
+      const novo = prompt('Novo nome para o controle:', antigo);
+      if (novo && novo.trim() !== '') {
+        controles[index] = novo.trim();
+        document.querySelectorAll('#tabela-corpo tr').forEach(tr => {
+          if (tr.dataset.controle === antigo) tr.dataset.controle = novo.trim();
+        });
+        renderizarListaControlesModal();
+        atualizarSelectsControles();
+        filtrarDespesas();
+      }
     }
 
-    function render() {
-      const tbody = document.getElementById('tableBody');
-      tbody.innerHTML = '';
+    function excluirControle(index) {
+      if (controles.length <= 1) return alert('É necessário manter pelo menos um controle.');
+      const controle = controles[index];
+      if (confirm(`Deseja remover o controle "${controle}"?`)) {
+        controles.splice(index, 1);
+        renderizarListaControlesModal();
+        atualizarSelectsControles();
+        filtrarDespesas();
+      }
+    }
 
-      const busca = document.getElementById('filterBusca').value.toLowerCase();
-      const de = document.getElementById('filterDe').value;
-      const ate = document.getElementById('filterAte').value;
-      const mostrarPagas = document.getElementById('chkPagas').checked;
+    function abrirModalNovaDespesa() {
+      linhaEmEdicao = null;
+      document.getElementById('modal-edicao-titulo').innerText = 'Nova Despesa';
+      document.getElementById('form-editar').reset();
+      document.getElementById('edit-situacao').value = 'EM ABERTO';
+      document.getElementById('modal-edicao').classList.add('active');
+    }
 
-      let aVencer = 0, vencidas = 0, venceHoje = 0, totalSel = 0;
-      
-      const now = new Date();
-      const hoje = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    function formatarParaInputDate(dataStr) {
+      if (!dataStr || dataStr === '-') return '';
+      const partes = dataStr.split('/');
+      return partes.length === 3 ? `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}` : '';
+    }
 
-      const dados = getCurrentData();
+    function formatarParaTabelaDate(dataIso) {
+      if (!dataIso) return '-';
+      const partes = dataIso.split('-');
+      return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : '-';
+    }
 
-      dados.forEach((item, index) => {
-        const estaPaga = !!item.dataPagamento;
+    function abrirModalEdicao(botao) {
+      linhaEmEdicao = botao.closest('tr');
+      document.getElementById('modal-edicao-titulo').innerText = 'Editar Despesa';
 
-        if (estaPaga && !mostrarPagas) return;
+      const controle = linhaEmEdicao.dataset.controle;
+      const fornecedor = linhaEmEdicao.cells[1].innerText.trim();
+      const valorStr = linhaEmEdicao.cells[2].innerText.replace('R$', '').trim();
+      const vencimentoStr = linhaEmEdicao.cells[3].innerText.trim();
+      const pagamentoStr = linhaEmEdicao.cells[4].innerText.trim();
+      const status = linhaEmEdicao.dataset.status;
 
-        if (busca && !item.fornecedor.toLowerCase().includes(busca)) return;
-        if (de && item.vencimento < de) return;
-        if (ate && item.vencimento > ate) return;
+      document.getElementById('edit-controle').value = controle;
+      document.getElementById('edit-fornecedor').value = fornecedor;
+      document.getElementById('edit-valor').value = valorStr;
+      document.getElementById('edit-vencimento').value = formatarParaInputDate(vencimentoStr);
+      document.getElementById('edit-pagamento').value = formatarParaInputDate(pagamentoStr);
+      document.getElementById('edit-situacao').value = status;
 
-        const valor = Number(item.valor) || 0;
-        
-        if (selectedIndexes.has(index)) {
-          totalSel += valor;
-        }
+      document.getElementById('modal-edicao').classList.add('active');
+    }
 
-        let statusClass = "badge-pendente";
-        let statusText = "A Vencer";
-        let fornecedorClass = "";
+    function fecharModalEdicao() {
+      document.getElementById('modal-edicao').classList.remove('active');
+      linhaEmEdicao = null;
+    }
 
-        if (estaPaga) {
-          statusClass = "badge-paga";
-          statusText = "Paga";
-        } else if (item.vencimento < hoje) {
-          statusClass = "badge-vencida";
-          statusText = "Vencida";
-          fornecedorClass = "fornecedor-vencido";
-          vencidas += valor;
-        } else if (item.vencimento === hoje) {
-          statusClass = "badge-hoje";
-          statusText = "Vence Hoje";
-          fornecedorClass = "fornecedor-hoje";
-          venceHoje += valor;
-          aVencer += valor;
-        } else {
-          aVencer += valor;
-        }
+    function aoMudarSituacaoModal() {
+      const situacao = document.getElementById('edit-situacao').value;
+      const inputPagamento = document.getElementById('edit-pagamento');
+      if (situacao === 'PAGA' && !inputPagamento.value) {
+        inputPagamento.value = new Date().toISOString().split('T')[0];
+      }
+    }
 
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><input type="checkbox" ${selectedIndexes.has(index) ? 'checked' : ''} onchange="toggleSelect(${index})"></td>
-          <td><span class="${fornecedorClass}">${item.fornecedor}</span></td>
-          <td>R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-          <td>${formatDate(item.vencimento)}</td>
-          <td>${item.dataPagamento ? formatDate(item.dataPagamento) : '-'}</td>
-          <td><span class="badge ${statusClass}">${statusText}</span></td>
-          <td>${item.anexo ? `<a href="${item.anexo}" target="_blank" style="color:var(--accent);">📄 Ver</a>` : '-'}</td>
+    function salvarEdicao(event) {
+      event.preventDefault();
+
+      const novoControle = document.getElementById('edit-controle').value;
+      const novoFornecedor = document.getElementById('edit-fornecedor').value.trim();
+      const novoValorStr = document.getElementById('edit-valor').value.trim();
+      const novoVencimentoIso = document.getElementById('edit-vencimento').value;
+      const novaSituacao = document.getElementById('edit-situacao').value;
+      let novoPagamentoIso = document.getElementById('edit-pagamento').value;
+
+      const valorNumerico = parseFloat(novoValorStr.replace(/\./g, '').replace(',', '.'));
+      if (isNaN(valorNumerico)) return alert('Por favor, digite um valor numérico válido.');
+
+      let statusFinal = novaSituacao;
+      if (novoPagamentoIso && novoPagamentoIso !== '') statusFinal = 'PAGA';
+
+      if (!linhaEmEdicao) {
+        const tbody = document.getElementById('tabela-corpo');
+        linhaEmEdicao = document.createElement('tr');
+        linhaEmEdicao.dataset.id = Date.now();
+        linhaEmEdicao.innerHTML = `
+          <td><input type="checkbox" class="check-item" onchange="atualizarSomaSelecionadas()"></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td class="td-pagamento">-</td>
+          <td class="td-situacao"></td>
+          <td>-</td>
           <td>
-            <button class="btn-secondary" style="padding:4px 8px;" onclick="editItem(${index})">✏️</button>
-            <button class="btn-secondary" style="padding:4px 8px; color:var(--danger);" onclick="deleteItem(${index})">🗑️</button>
+            <button class="btn-action-icon" onclick="abrirModalEdicao(this)" title="Editar Completo">✏️</button>
+            <button class="btn-action-icon" onclick="excluirDespesa(this)" title="Excluir">🗑️</button>
           </td>
         `;
-        tbody.appendChild(tr);
-      });
-
-      document.getElementById('cardAVencer').innerText = `R$ ${aVencer.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-      document.getElementById('cardVencidas').innerText = `R$ ${vencidas.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-      document.getElementById('cardVenceHoje').innerText = `R$ ${venceHoje.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-      document.getElementById('cardSelecionadas').innerText = `R$ ${totalSel.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-    }
-
-    function toggleStatusGroup(tipoStatus, isChecked) {
-      const now = new Date();
-      const hoje = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-      const dados = getCurrentData();
-
-      dados.forEach((item, index) => {
-        const estaPaga = !!item.dataPagamento;
-        const estaVencida = !estaPaga && item.vencimento < hoje;
-        const estaAVencer = !estaPaga && item.vencimento >= hoje;
-
-        let atendeGrupo = false;
-        if (tipoStatus === 'vencidas' && estaVencida) atendeGrupo = true;
-        if (tipoStatus === 'aVencer' && estaAVencer) atendeGrupo = true;
-        if (tipoStatus === 'pagas' && estaPaga) atendeGrupo = true;
-
-        if (atendeGrupo) {
-          if (isChecked) {
-            selectedIndexes.add(index);
-          } else {
-            selectedIndexes.delete(index);
-          }
-        }
-      });
-
-      render();
-    }
-
-    function formatDate(dateStr) {
-      if (!dateStr) return '';
-      const parts = dateStr.split('-');
-      return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
-
-    function openModal() {
-      editingIndex = -1;
-      document.getElementById('modalTitle').innerText = "Nova Despesa";
-      document.getElementById('fFornecedor').value = '';
-      document.getElementById('fValor').value = '';
-      document.getElementById('fVenc').value = '';
-      document.getElementById('fPag').value = '';
-      document.getElementById('fAnexo').value = '';
-      document.getElementById('modalDespesa').classList.add('open');
-    }
-
-    function closeModal() {
-      document.getElementById('modalDespesa').classList.remove('open');
-    }
-
-    // Função de auxílio para ler arquivo em Base64
-    function lerArquivoBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-        reader.readAsDataURL(file);
-      });
-    }
-
-    async function save() {
-      const fF = document.getElementById('fFornecedor').value.trim();
-      const fV = Number(document.getElementById('fValor').value || 0);
-      const fVc = document.getElementById('fVenc').value;
-      const fP = document.getElementById('fPag').value || '';
-      const inputAnexo = document.getElementById('fAnexo');
-
-      if (!fF || !fVc) {
-        alert('Preencha pelo menos o fornecedor e a data de vencimento.');
-        return;
+        tbody.appendChild(linhaEmEdicao);
       }
 
-      let urlAnexo = null;
-      let nomeAnexo = null;
+      linhaEmEdicao.dataset.controle = novoControle;
+      linhaEmEdicao.dataset.status = statusFinal;
+      linhaEmEdicao.cells[1].innerText = novoFornecedor;
+      linhaEmEdicao.cells[1].style.color = statusFinal === 'VENCIDA' ? '#e53e3e' : '#1e293b';
+      linhaEmEdicao.cells[2].innerText = valorNumerico.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      linhaEmEdicao.cells[3].innerText = formatarParaTabelaDate(novoVencimentoIso);
+      linhaEmEdicao.cells[4].innerText = statusFinal === 'PAGA' ? formatarParaTabelaDate(novoPagamentoIso) : '-';
 
-      // Mantém o anexo antigo se estiver apenas editando
-      if (editingIndex >= 0) {
-        const itemExistente = getCurrentData()[editingIndex];
-        urlAnexo = itemExistente.anexo || null;
-        nomeAnexo = itemExistente.anexoNome || null;
-      }
-
-      const btnSalvar = document.getElementById('btnSalvar');
-      btnSalvar.disabled = true;
-      btnSalvar.innerText = "Salvando...";
-
-      if (inputAnexo && inputAnexo.files && inputAnexo.files[0]) {
-        updateSyncIndicator("☁️ Enviando anexo...", "sync-loading");
-        const file = inputAnexo.files[0];
-        nomeAnexo = file.name;
-
-        try {
-          const dataUrl = await lerArquivoBase64(file);
-          // Remove a informação do Data URI e obtém apenas o conteúdo Base64
-          const base64Data = dataUrl.split(',')[1];
-          const mimeType = file.type;
-
-          if (typeof google !== 'undefined' && google.script && google.script.run) {
-            const uploadRes = await new Promise((resolve) => {
-              google.script.run
-                .withSuccessHandler(resolve)
-                .withFailureHandler((err) => {
-                  console.error(err);
-                  resolve(null);
-                })
-                .salvarArquivoNoDrive({ base64: base64Data, nome: nomeAnexo, mimeType: mimeType });
-            });
-
-            if (uploadRes && uploadRes.status === "OK") {
-              urlAnexo = uploadRes.url;
-            } else {
-              alert("Aviso: Não foi possível enviar o anexo. O item será salvo sem arquivo.");
-            }
-          }
-        } catch (e) {
-          console.error("Erro na leitura do arquivo", e);
-        }
-      }
-
-      const novaDespesa = {
-        controle: appState.controleAtual,
-        fornecedor: fF,
-        valor: fV,
-        vencimento: fVc,
-        dataPagamento: fP,
-        anexo: urlAnexo,
-        anexoNome: nomeAnexo
-      };
-
-      if (editingIndex >= 0) {
-        let count = 0;
-        for (let i = 0; i < appState.despesas.length; i++) {
-          if ((appState.despesas[i].controle || "Geral") === appState.controleAtual) {
-            if (count === editingIndex) {
-              appState.despesas[i] = novaDespesa;
-              break;
-            }
-            count++;
-          }
-        }
+      const tdSituacao = linhaEmEdicao.cells[5];
+      if (statusFinal === 'PAGA') {
+        tdSituacao.innerHTML = '<span class="badge-status badge-paga">PAGA</span>';
+      } else if (statusFinal === 'VENCIDA') {
+        tdSituacao.innerHTML = '<span class="badge-status badge-vencida">VENCIDA</span>';
       } else {
-        appState.despesas.push(novaDespesa);
+        tdSituacao.innerHTML = '<span class="badge-status badge-aberto">EM ABERTO</span>';
       }
 
-      persist();
-      btnSalvar.disabled = false;
-      btnSalvar.innerText = "Salvar Despesa";
-      closeModal();
-      render();
+      fecharModalEdicao();
+      filtrarDespesas();
     }
 
-    function editItem(index) {
-      editingIndex = index;
-      const item = getCurrentData()[index];
-      document.getElementById('modalTitle').innerText = "Editar Despesa";
-      document.getElementById('fFornecedor').value = item.fornecedor;
-      document.getElementById('fValor').value = item.valor;
-      document.getElementById('fVenc').value = item.vencimento;
-      document.getElementById('fPag').value = item.dataPagamento || '';
-      document.getElementById('fAnexo').value = '';
-      document.getElementById('modalDespesa').classList.add('open');
+    function excluirDespesa(botao) {
+      const tr = botao.closest('tr');
+      const fornecedor = tr.cells[1].innerText.trim();
+      if (confirm(`Tem certeza que deseja excluir a despesa "${fornecedor}"?`)) {
+        tr.remove();
+        filtrarDespesas();
+      }
     }
 
-    function deleteItem(index) {
-      if (!confirm('Deseja realmente excluir esta despesa?')) return;
-      let count = 0;
-      for (let i = 0; i < appState.despesas.length; i++) {
-        if ((appState.despesas[i].controle || "Geral") === appState.controleAtual) {
-          if (count === index) {
-            appState.despesas.splice(i, 1);
-            break;
-          }
-          count++;
+    function toggleSelectAll(master) {
+      document.querySelectorAll('.check-item').forEach(cb => {
+        const tr = cb.closest('tr');
+        if (tr && tr.style.display !== 'none') cb.checked = master.checked;
+      });
+      atualizarSomaSelecionadas();
+    }
+
+    function atualizarSomaSelecionadas() {
+      let total = 0;
+      document.querySelectorAll('.check-item:checked').forEach(cb => {
+        const tr = cb.closest('tr');
+        if (tr && tr.style.display !== 'none') {
+          const valorTexto = tr.cells[2].innerText.replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
+          total += parseFloat(valorTexto) || 0;
         }
-      }
-      persist();
-      render();
+      });
+      document.getElementById('card-total-selecionadas').innerText = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
 
-    function toggleSelect(index) {
-      if (selectedIndexes.has(index)) selectedIndexes.delete(index);
-      else selectedIndexes.add(index);
-      render();
-    }
+    function recalcularCardsInformativos() {
+      let aVencer = 0, vencidas = 0, venceHoje = 0;
+      const hoje = new Date().toISOString().split('T')[0];
 
-    function toggleSelectAll(checked) {
-      selectedIndexes.clear();
-      if (checked) {
-        const mostrarPagas = document.getElementById('chkPagas').checked;
-        getCurrentData().forEach((item, i) => {
-          if (!item.dataPagamento || mostrarPagas) {
-            selectedIndexes.add(i);
+      document.querySelectorAll('#tabela-corpo tr').forEach(tr => {
+        if (tr.style.display !== 'none') {
+          const valor = parseFloat(tr.cells[2].innerText.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) || 0;
+          const status = tr.dataset.status;
+          const vencimentoIso = formatarParaInputDate(tr.cells[3].innerText.trim());
+
+          if (status === 'VENCIDA') {
+            vencidas += valor;
+          } else if (status === 'EM ABERTO') {
+            if (vencimentoIso === hoje) {
+              venceHoje += valor;
+            } else {
+              aVencer += valor;
+            }
+          } else if (status === 'VENCE HOJE') {
+            venceHoje += valor;
           }
-        });
-      }
-      render();
+        }
+      });
+
+      document.getElementById('card-a-vencer').innerText = aVencer.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      document.getElementById('card-vencidas').innerText = vencidas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      document.getElementById('card-vence-hoje').innerText = venceHoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
 
-    function marcarTodas(status) {
-      toggleSelectAll(status);
-      document.getElementById('checkAll').checked = status;
+    function pagarSelecionadasHoje() {
+      const hoje = new Date();
+      const dataHojeFormatada = `${String(hoje.getDate()).padStart(2, '0')}/${String(hoje.getMonth() + 1).padStart(2, '0')}/${hoje.getFullYear()}`;
+      const selecionados = document.querySelectorAll('.check-item:checked');
+
+      if (selecionados.length === 0) return alert('Selecione ao menos uma despesa para realizar o pagamento.');
+
+      selecionados.forEach(cb => {
+        const tr = cb.closest('tr');
+        if (tr) {
+          tr.cells[4].innerText = dataHojeFormatada;
+          tr.cells[5].innerHTML = '<span class="badge-status badge-paga">PAGA</span>';
+          tr.dataset.status = 'PAGA';
+          tr.cells[1].style.color = '#1e293b';
+          cb.checked = false;
+        }
+      });
+
+      const master = document.getElementById('check-master');
+      if (master) master.checked = false;
+
+      filtrarDespesas();
+      alert(`${selecionados.length} despesa(s) marcada(s) como PAGA com a data de hoje (${dataHojeFormatada})!`);
+    }
+
+    function filtrarDespesas() {
+      const controleSelecionado = document.getElementById('select-controle').value;
+      const termoBusca = document.getElementById('input-busca').value.toLowerCase();
+      const statusCheckboxes = document.querySelectorAll('.filter-status:checked');
+      const statusSelecionados = Array.from(statusCheckboxes).map(cb => cb.value);
+      const estaMarcarTodas = document.getElementById('chk-todas').checked;
+      const estaMarcarPagas = document.getElementById('chk-pagas').checked;
+      const dataDe = document.getElementById('data-de').value;
+      const dataAte = document.getElementById('data-ate').value;
+
+      document.querySelectorAll('#tabela-corpo tr').forEach(tr => {
+        const controleLinha = tr.dataset.controle;
+        const statusLinha = tr.dataset.status;
+        const fornecedorLinha = tr.cells[1].innerText.toLowerCase();
+        const vencimentoIso = formatarParaInputDate(tr.cells[3].innerText.trim());
+
+        const bateControle = (controleSelecionado === 'TODOS' || controleLinha === controleSelecionado);
+        const bateBusca = fornecedorLinha.includes(termoBusca);
+        let bateStatus = statusLinha === 'PAGA' ? (estaMarcarPagas || estaMarcarTodas) : (estaMarcarTodas || statusSelecionados.length === 0 || statusSelecionados.includes(statusLinha));
+        
+        let bateData = true;
+        if (dataDe && vencimentoIso < dataDe) bateData = false;
+        if (dataAte && vencimentoIso > dataAte) bateData = false;
+
+        if (bateControle && bateBusca && bateStatus && bateData) {
+          tr.style.display = '';
+        } else {
+          tr.style.display = 'none';
+          const cb = tr.querySelector('.check-item');
+          if (cb) cb.checked = false;
+        }
+      });
+
+      atualizarSomaSelecionadas();
+      recalcularCardsInformativos();
+    }
+
+    function desmarcarTodosStatus() {
+      document.querySelectorAll('.filter-status').forEach(cb => cb.checked = false);
+      filtrarDespesas();
+    }
+
+    function marcarTodasStatus(master) {
+      document.querySelectorAll('.filter-status').forEach(cb => cb.checked = master.checked);
+      filtrarDespesas();
     }
 
     function limparFiltros() {
-      document.getElementById('filterBusca').value = '';
-      document.getElementById('filterDe').value = '';
-      document.getElementById('filterAte').value = '';
-      resetCheckboxesStatus();
-      render();
+      document.getElementById('input-busca').value = '';
+      document.getElementById('data-de').value = '';
+      document.getElementById('data-ate').value = '';
+      filtrarDespesas();
     }
 
-    function openControlModal() {
-      renderListaControlesModal();
-      document.getElementById('modalControles').classList.add('open');
-    }
-
-    function closeControlModal() {
-      document.getElementById('modalControles').classList.remove('open');
-    }
-
-    function renderListaControlesModal() {
-      const ul = document.getElementById('listaControlesUI');
-      ul.innerHTML = '';
-      appState.listaControles.forEach((ctrl, idx) => {
-        const li = document.createElement('li');
-        li.style.display = 'flex';
-        li.style.justifyContent = 'space-between';
-        li.style.alignItems = 'center';
-        li.style.padding = '8px 0';
-        li.style.borderBottom = '1px solid var(--border)';
-        li.innerHTML = `
-          <span>${ctrl}</span>
-          ${idx > 0 ? `<button class="btn-secondary" style="color:var(--danger); padding:2px 6px;" onclick="removerControle('${ctrl}')">Excluir</button>` : '<small>Padrão</small>'}
-        `;
-        ul.appendChild(li);
-      });
-    }
-
-    function adicionarControle() {
-      const nome = document.getElementById('novoControleNome').value.trim();
-      if (!nome) return;
-      if (!appState.listaControles.includes(nome)) {
-        appState.listaControles.push(nome);
-        document.getElementById('novoControleNome').value = '';
-        persist();
-        renderSelectControles();
-        renderListaControlesModal();
-      }
-    }
-
-    function removerControle(nome) {
-      if (!confirm(`Excluir o controle "${nome}"?`)) return;
-      appState.listaControles = appState.listaControles.filter(c => c !== nome);
-      if (appState.controleAtual === nome) appState.controleAtual = "Geral";
-      persist();
-      renderSelectControles();
-      renderListaControlesModal();
-      render();
-    }
-
-    function exportCSV() {
-      const dados = getCurrentData();
-      let csv = 'Fornecedor;Valor;Vencimento;Pagamento\n';
-      dados.forEach(d => {
-        csv += `"${d.fornecedor}";"${d.valor}";"${d.vencimento}";"${d.dataPagamento || ''}"\n`;
-      });
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `Despesas_${appState.controleAtual}.csv`;
-      link.click();
-    }
-
-    function exportPDFSelecionadas() {
-      if (selectedIndexes.size === 0) {
-        alert("Por favor, selecione pelo menos uma despesa para gerar o PDF.");
-        return;
-      }
-
-      const dados = getCurrentData();
-      const selecionadas = [];
-      let totalSelecionadas = 0;
-
-      dados.forEach((item, index) => {
-        if (selectedIndexes.has(index)) {
-          selecionadas.push(item);
-          totalSelecionadas += Number(item.valor) || 0;
-        }
-      });
+    function gerarPDF() {
+      const selecionados = document.querySelectorAll('.check-item:checked');
+      if (selecionados.length === 0) return alert('Selecione ao menos uma despesa para gerar o PDF.');
 
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-
-      const hoje = new Date();
-      const dataGeracaoStr = hoje.toLocaleDateString('pt-BR');
+      const controle = document.getElementById('select-controle').value;
+      const hoje = new Date().toLocaleDateString('pt-BR');
 
       doc.setFontSize(16);
-      doc.text(`Relatório de Despesas Selecionadas - ${appState.controleAtual}`, 14, 15);
-      
+      doc.text("Relatório de Despesas Selecionadas", 14, 15);
       doc.setFontSize(10);
-      doc.text(`Data de Geração: ${dataGeracaoStr}`, 14, 22);
+      doc.text(`Controle: ${controle}`, 14, 22);
+      doc.text(`Data de Emissão: ${hoje}`, 14, 27);
 
-      const tableRows = selecionadas.map(d => [
-        d.fornecedor,
-        `R$ ${(Number(d.valor) || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`,
-        formatDate(d.vencimento),
-        d.dataPagamento ? formatDate(d.dataPagamento) : '-'
-      ]);
+      const colunas = ["Fornecedor", "Valor", "Vencimento", "Pagamento", "Situação"];
+      const linhas = [];
+      let valorTotal = 0;
+
+      selecionados.forEach(cb => {
+        const tr = cb.closest('tr');
+        if (tr && tr.style.display !== 'none') {
+          const fornecedor = tr.cells[1].innerText.trim();
+          const valorStr = tr.cells[2].innerText.trim();
+          const vencimento = tr.cells[3].innerText.trim();
+          const pagamento = tr.cells[4].innerText.trim();
+          const situacao = tr.cells[5].innerText.trim();
+
+          const valorNum = parseFloat(valorStr.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) || 0;
+          valorTotal += valorNum;
+
+          linhas.push([fornecedor, valorStr, vencimento, pagamento, situacao]);
+        }
+      });
 
       doc.autoTable({
-        startY: 28,
-        head: [['Fornecedor', 'Valor', 'Vencimento', 'Data Pagamento']],
-        body: tableRows,
+        startY: 32,
+        head: [colunas],
+        body: linhas,
         theme: 'striped',
-        headStyles: { fillColor: [30, 41, 59] }
+        headStyles: { fillColor: [19, 31, 55], textColor: [255, 255, 255] },
+        styles: { fontSize: 9, cellPadding: 3 }
       });
 
       const finalY = doc.lastAutoTable.finalY + 10;
-      doc.setFontSize(12);
+      doc.setFontSize(11);
       doc.setFont(undefined, 'bold');
-      doc.text(`Total das Selecionadas: R$ ${totalSelecionadas.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`, 14, finalY);
+      doc.text(`Total das Despesas Selecionadas: ${valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 14, finalY);
 
-      doc.save(`Despesas_Selecionadas_${appState.controleAtual}_${dataGeracaoStr.replace(/\//g, '-')}.pdf`);
+      doc.save(`Despesas_Selecionadas_${hoje.replace(/\//g, '-')}.pdf`);
+    }
+
+    function exportarCSV() {
+      const selecionados = document.querySelectorAll('.check-item:checked');
+      if (selecionados.length === 0) return alert('Selecione ao menos uma despesa para exportar o CSV.');
+
+      let csvContent = "data:text/csv;charset=utf-8,Fornecedor;Valor;Vencimento;Pagamento;Situação\n";
+
+      selecionados.forEach(cb => {
+        const tr = cb.closest('tr');
+        if (tr && tr.style.display !== 'none') {
+          const linha = [
+            `"${tr.cells[1].innerText.trim()}"`,
+            `"${tr.cells[2].innerText.trim()}"`,
+            `"${tr.cells[3].innerText.trim()}"`,
+            `"${tr.cells[4].innerText.trim()}"`,
+            `"${tr.cells[5].innerText.trim()}"`
+          ].join(";");
+          csvContent += linha + "\n";
+        }
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "despesas_selecionadas.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   </script>
 </body>
